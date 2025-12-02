@@ -1,0 +1,38 @@
+name: Build & Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v3
+
+      - name: Install Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Build React App
+        run: npm run build
+
+      # Note: For a real Electron build/release, we would use electron-builder here.
+      # Since electron-builder is not yet fully configured in package.json, 
+      # this step currently verifies that the project builds without errors.
+      # To enable full release:
+      # 1. Add electron-builder to devDependencies
+      # 2. Add "build": "electron-builder" to scripts
+      # 3. Uncomment the following step:
+      
+      # - name: Build Electron App
+      #   run: npm run electron:build
+      #   env:
+      #     GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

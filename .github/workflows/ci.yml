@@ -1,0 +1,30 @@
+name: Feature Branch CI
+
+on:
+  push:
+    branches:
+      - 'feature/*'
+      - 'bugfix/*'
+      - 'dev'
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  verify-build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v3
+
+      - name: Install Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Verify Build
+        run: npm run build
