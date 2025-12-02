@@ -1,0 +1,72 @@
+{
+    "versions": [
+        {
+            "version": "1.1.0",
+            "date": "2025-12-02",
+            "type": "minor",
+            "title": "Desktop Integration & Smart Scanning",
+            "changes": [
+                {
+                    "type": "feat",
+                    "text": "Electron-Integration für Desktop-Nutzung"
+                },
+                {
+                    "type": "feat",
+                    "text": "Intelligenter Projekt-Scan (Album, Song, Commercial) in C:\\Downloads"
+                },
+                {
+                    "type": "feat",
+                    "text": "Automatische Erkennung von Projekt-Strukturen und Track-Anzahl"
+                },
+                {
+                    "type": "feat",
+                    "text": "Erweitertes Error-Logging System"
+                },
+                {
+                    "type": "docs",
+                    "text": "Benutzer-Dokumentation aktualisiert"
+                }
+            ]
+        },
+        {
+            "version": "1.0.1",
+            "date": "2025-12-02",
+            "type": "patch",
+            "title": "Bugfixes & Lokalisierung",
+            "changes": [
+                {
+                    "type": "fix",
+                    "text": "Korrektur der CSS-Layout-Probleme im Dashboard"
+                },
+                {
+                    "type": "fix",
+                    "text": "Behebung von Syntax-Fehlern in Komponenten"
+                },
+                {
+                    "type": "feat",
+                    "text": "Vollständige deutsche Lokalisierung"
+                },
+                {
+                    "type": "ui",
+                    "text": "Dark Mode und Glassmorphismus Design-Update"
+                }
+            ]
+        },
+        {
+            "version": "1.0.0",
+            "date": "2025-12-01",
+            "type": "major",
+            "title": "Initial Release",
+            "changes": [
+                {
+                    "type": "feat",
+                    "text": "Basis-Funktionalität: Projekt-Erstellung und Verwaltung"
+                },
+                {
+                    "type": "feat",
+                    "text": "Fortschritts-Tracking und Statistiken"
+                }
+            ]
+        }
+    ]
+}
