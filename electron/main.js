@@ -39,8 +39,9 @@ async function createWindow() {
         width: 1280,
         height: 800,
         webPreferences: {
-            nodeIntegration: true,
-            contextIsolation: false,
+            nodeIntegration: false,
+            contextIsolation: true,
+            preload: path.join(__dirname, 'preload.js')
         },
         title: "Media Project Manager",
         backgroundColor: '#0a0a0f'
