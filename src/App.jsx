@@ -2,9 +2,10 @@ import { useState, useEffect } from 'react';
 import Header from './components/Header';
 import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
-import ProjectDetail from './components/ProjectDetail';
+import ProjectDetailView from './components/ProjectDetailView';
 import Footer from './components/Footer';
 import HelpModal from './components/HelpModal';
+import { getDefaultTasks } from './constants/projectTypes';
 import './App.css';
 
 function App() {
@@ -19,9 +20,8 @@ function App() {
 
   // Load projects on startup
   useEffect(() => {
-    if (window.require) {
-      const { ipcRenderer } = window.require('electron');
-      ipcRenderer.invoke('load-projects').then(result => {
+    if (window.electron) {
+      window.electron.loadProjects().then(result => {
         if (result.success && result.projects) {
           setProjects(result.projects);
         } else {
@@ -44,9 +44,8 @@ function App() {
 
   // Save projects on change (only after initial load)
   useEffect(() => {
-    if (isLoaded && window.require) {
-      const { ipcRenderer } = window.require('electron');
-      ipcRenderer.invoke('save-projects', projects).catch(err => {
+    if (isLoaded && window.electron) {
+      window.electron.saveProjects(projects).catch(err => {
         console.error('Failed to save projects:', err);
       });
     }
@@ -74,10 +73,9 @@ function App() {
       let newProject = { ...projectData };
 
       // Scan for resources if running in Electron
-      if (window.require && projectData.path) {
+      if (window.electron && projectData.path) {
         try {
-          const { ipcRenderer } = window.require('electron');
-          const result = await ipcRenderer.invoke('scan-project-resources', projectData.path);
+          const result = await window.electron.scanProjectResources(projectData.path);
           if (result.success) {
             newProject.assets = result.assets;
             newProject.notes = `${newProject.notes}\n\n${result.assets.length} Ressourcen gefunden.`;
@@ -158,8 +156,21 @@ function App() {
     }
   };
 
+  // Update project (for ProjectDetailView)
+  const handleUpdateProject = (updatedProject) => {
+    setProjects(projects.map(p =>
+      p.id === updatedProject.id ? updatedProject : p
+    ));
+    setActiveProject(updatedProject);
+  };
+
   // Select project
   const handleSelectProject = (project) => {
+    // Add default tasks if project doesn't have any
+    if (!project.tasks || project.tasks.length === 0) {
+      const defaultTasks = getDefaultTasks(project.type);
+      project = { ...project, tasks: defaultTasks };
+    }
     setActiveProject(project);
   };
 
@@ -187,10 +198,10 @@ function App() {
 
         <main className="app-main">
           {activeProject ? (
-            <ProjectDetail
+            <ProjectDetailView
               project={activeProject}
               onBack={() => setActiveProject(null)}
-              onUpdateProgress={handleUpdateProgress}
+              onUpdateProject={handleUpdateProject}
             />
           ) : (
             <Dashboard

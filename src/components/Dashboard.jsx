@@ -9,10 +9,9 @@ const Dashboard = ({ projects, onSelectProject, onNewProject, onEditProject, onD
 
     useEffect(() => {
         // Check if running in Electron
-        if (window.require) {
-            const { ipcRenderer } = window.require('electron');
+        if (window.electron) {
             setLoadingDownloads(true);
-            ipcRenderer.invoke('scan-projects').then(result => {
+            window.electron.scanProjects().then(result => {
                 if (result.success) {
                     setDownloads(result.projects);
                 } else {
@@ -45,11 +44,10 @@ const Dashboard = ({ projects, onSelectProject, onNewProject, onEditProject, onD
     };
 
     const handleManualScan = async () => {
-        if (window.require) {
-            const { ipcRenderer } = window.require('electron');
+        if (window.electron) {
             setLoadingDownloads(true);
             try {
-                const result = await ipcRenderer.invoke('select-scan-folder');
+                const result = await window.electron.selectScanFolder();
                 if (result.success && result.projects) {
                     // Add newly found projects to the list (avoid duplicates)
                     setDownloads(prev => {
