@@ -5,6 +5,7 @@ import Dashboard from './components/Dashboard';
 import ProjectDetailView from './components/ProjectDetailView';
 import Footer from './components/Footer';
 import HelpModal from './components/HelpModal';
+import SettingsModal from './components/SettingsModal';
 import { getDefaultTasks } from './constants/projectTypes';
 import './App.css';
 
@@ -16,6 +17,7 @@ function App() {
   const [filter, setFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [showHelp, setShowHelp] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false); // Track if initial load is done
 
   // Load projects on startup
@@ -184,6 +186,7 @@ function App() {
       <Header
         onNewProject={handleNewProject}
         onSearch={handleSearch}
+        onSettings={() => setShowSettings(true)}
       />
 
       <div className="app-body">
@@ -228,6 +231,7 @@ function App() {
       </button>
 
       {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}
+      {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
     </div>
   );
 }

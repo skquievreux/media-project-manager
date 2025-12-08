@@ -1,7 +1,7 @@
 import { SearchIcon, PlusIcon, SettingsIcon } from './Icons';
 import './Header.css';
 
-const Header = ({ onNewProject, onSearch }) => {
+const Header = ({ onNewProject, onSearch, onSettings }) => {
     return (
         <header className="header glass-strong">
             <div className="header-content">
@@ -32,7 +32,7 @@ const Header = ({ onNewProject, onSearch }) => {
                         <PlusIcon size={20} />
                         <span>New Project</span>
                     </button>
-                    <button className="btn-ghost icon-btn">
+                    <button className="btn-ghost icon-btn" onClick={onSettings} title="Einstellungen">
                         <SettingsIcon size={20} />
                     </button>
                 </div>
