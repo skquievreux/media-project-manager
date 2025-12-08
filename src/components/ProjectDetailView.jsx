@@ -16,14 +16,37 @@ function ProjectDetailView({ project, onBack, onUpdateProject }) {
     if (window.electron && project.path) {
       window.electron.scanProjectResources(project.path).then(result => {
         if (result.success && result.assets) {
-          // Merge assets avoiding duplicates
-          const currentIds = new Set((project.assets || []).map(a => a.name)); // name as unique key for simplicity
-          const newAssets = result.assets.filter(a => !currentIds.has(a.name));
+          const scannedAssets = result.assets;
+          let hasChanges = false;
 
-          if (newAssets.length > 0) {
+          // Create a map of existing assets for quick lookup
+          const existingAssetsMap = new Map((project.assets || []).map(a => [a.name, a]));
+
+          // Build new assets list
+          const mergedAssets = [...(project.assets || [])];
+
+          scannedAssets.forEach(scannedAsset => {
+            const existing = existingAssetsMap.get(scannedAsset.name);
+            if (existing) {
+              // Update URL if it changed (e.g. from file:// to media://)
+              if (existing.url !== scannedAsset.url) {
+                const index = mergedAssets.findIndex(a => a.name === scannedAsset.name);
+                if (index !== -1) {
+                  mergedAssets[index] = { ...existing, url: scannedAsset.url };
+                  hasChanges = true;
+                }
+              }
+            } else {
+              // Add new asset
+              mergedAssets.push(scannedAsset);
+              hasChanges = true;
+            }
+          });
+
+          if (hasChanges) {
             onUpdateProject({
               ...project,
-              assets: [...(project.assets || []), ...newAssets]
+              assets: mergedAssets
             });
           }
         }
