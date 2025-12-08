@@ -1,3 +1,25 @@
+# [1.6.0](https://github.com/skquievreux/media-project-manager/compare/v1.5.2...v1.6.0) (2025-12-08)
+
+
+### Bug Fixes
+
+* resolve asset preview layout issues and card design ([c75df34](https://github.com/skquievreux/media-project-manager/commit/c75df34998b35a24b28aedcda20d1524b6e9fa76))
+* resolve media playback issues and enable external file opening ([d20cdee](https://github.com/skquievreux/media-project-manager/commit/d20cdeeae78ee9852ac9b88e2e1404d4ff7a801d))
+* resolve SmartPrompts not showing due to dynamic IDs and fix prompt() error ([96a1c7c](https://github.com/skquievreux/media-project-manager/commit/96a1c7c73cda80c8fe04faf26dafb9cb29a3c401))
+* restore missing catch block and handler definition in main.js ([70a2ea2](https://github.com/skquievreux/media-project-manager/commit/70a2ea26150cbb69b1a947e0d22e84fec0dac944))
+* update CSP to allow blob/media schemas and add getSafeUrl helper ([f502f9c](https://github.com/skquievreux/media-project-manager/commit/f502f9c646060a4fba679c42306038ba40d69564))
+* update version display to 1.5.0 in SettingsModal ([f06e5c8](https://github.com/skquievreux/media-project-manager/commit/f06e5c84feafdec61820d216d06d975d3d69173d))
+
+
+### Features
+
+* add dedicated AI Prompts tab to ProjectDetailView ([b6eb2fd](https://github.com/skquievreux/media-project-manager/commit/b6eb2fda62e39fb73d12e86b3538a18b3b3b091a))
+* add SmartPrompts to Assets tab and fix asset URL protocol ([25ac3b4](https://github.com/skquievreux/media-project-manager/commit/25ac3b466eb90f8dad1185f43516df833b5b9709))
+* complete projectHelpers with all utility functions needed for end-to-end workflow ([29d0fcb](https://github.com/skquievreux/media-project-manager/commit/29d0fcb30269c3fcff1b708ea45d865fea4a89a6))
+* integrate FileDropZone into ProjectDetailView ([ba8d27c](https://github.com/skquievreux/media-project-manager/commit/ba8d27cd18c6aec54c07a07206fb1a1bab55b8ac))
+* integrate SmartPrompts and useProjectManagement hook, revert quick links name ([0d73729](https://github.com/skquievreux/media-project-manager/commit/0d737298d117947095c45aaa70afa9b7af2a760b))
+* rename Quick Links tab to Smart Templates ([1eb2d43](https://github.com/skquievreux/media-project-manager/commit/1eb2d43d416a8bec040ccb4151bad4180396215b))
+
 ## [1.5.2](https://github.com/skquievreux/media-project-manager/compare/v1.5.1...v1.5.2) (2025-12-08)
 
 
