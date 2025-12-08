@@ -6,6 +6,8 @@ import ProjectDetailView from './components/ProjectDetailView';
 import Footer from './components/Footer';
 import HelpModal from './components/HelpModal';
 import SettingsModal from './components/SettingsModal';
+import SettingsModal from './components/SettingsModal';
+import TemplatesView from './components/TemplatesView';
 import { getDefaultTasks } from './constants/projectTypes';
 import './App.css';
 
@@ -14,6 +16,7 @@ function App() {
   const [projects, setProjects] = useState([]);
 
   const [activeProject, setActiveProject] = useState(null);
+  const [currentView, setCurrentView] = useState('dashboard'); // 'dashboard', 'project', 'templates'
   const [filter, setFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [showHelp, setShowHelp] = useState(false);
@@ -93,24 +96,30 @@ function App() {
       // Create new random project (legacy/demo mode)
       const projectTypes = ['video', 'audio', 'image', 'document'];
       const statuses = ['planning', 'in-progress', 'completed'];
-      const randomType = projectTypes[Math.floor(Math.random() * projectTypes.length)];
+
+      // If projectData provides type, use it
+      const type = projectData?.type || projectTypes[Math.floor(Math.random() * projectTypes.length)];
       const randomStatus = statuses[Math.floor(Math.random() * statuses.length)];
+
+      const defaultTasks = getDefaultTasks(type);
 
       const newProject = {
         id: Date.now(),
-        name: `Neues ${randomType.charAt(0).toUpperCase() + randomType.slice(1)} Projekt`,
+        name: projectData?.name || `Neues ${type.charAt(0).toUpperCase() + type.slice(1)} Projekt`,
         description: 'Klicken zum Bearbeiten der Beschreibung und Details',
-        type: randomType,
+        type: type,
         status: randomStatus,
         progress: 0,
         createdAt: new Date().toISOString().split('T')[0],
         starred: false,
         assets: [],
-        notes: ''
+        notes: '',
+        tasks: defaultTasks
       };
 
       setProjects([newProject, ...projects]);
       setActiveProject(newProject);
+      setCurrentView('project');
     }
   };
 
@@ -168,12 +177,19 @@ function App() {
 
   // Select project
   const handleSelectProject = (project) => {
+    if (!project) {
+      setActiveProject(null);
+      setCurrentView('dashboard');
+      return;
+    }
+
     // Add default tasks if project doesn't have any
     if (!project.tasks || project.tasks.length === 0) {
       const defaultTasks = getDefaultTasks(project.type);
       project = { ...project, tasks: defaultTasks };
     }
     setActiveProject(project);
+    setCurrentView('project');
   };
 
   // Search
@@ -193,20 +209,16 @@ function App() {
         <Sidebar
           projects={filteredProjects}
           activeProject={activeProject}
+          currentView={currentView}
           onSelectProject={handleSelectProject}
-          onNewProject={handleNewProject}
+          onNavigate={setCurrentView}
+          onNewProject={() => handleNewProject(null)}
           filter={filter}
           onFilterChange={setFilter}
         />
 
         <main className="app-main">
-          {activeProject ? (
-            <ProjectDetailView
-              project={activeProject}
-              onBack={() => setActiveProject(null)}
-              onUpdateProject={handleUpdateProject}
-            />
-          ) : (
+          {currentView === 'dashboard' && (
             <Dashboard
               projects={filteredProjects}
               onSelectProject={handleSelectProject}
@@ -214,6 +226,23 @@ function App() {
               onEditProject={handleEditProject}
               onDeleteProject={handleDeleteProject}
               onToggleStar={handleToggleStar}
+            />
+          )}
+
+          {currentView === 'project' && activeProject && (
+            <ProjectDetailView
+              project={activeProject}
+              onBack={() => {
+                setActiveProject(null);
+                setCurrentView('dashboard');
+              }}
+              onUpdateProject={handleUpdateProject}
+            />
+          )}
+
+          {currentView === 'templates' && (
+            <TemplatesView
+              onNewProject={handleNewProject}
             />
           )}
         </main>

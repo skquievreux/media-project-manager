@@ -1,16 +1,26 @@
-import { HomeIcon, FolderIcon, FilterIcon, PlusIcon } from './Icons';
+import { HomeIcon, FolderIcon, FilterIcon, PlusIcon, GridIcon } from './Icons';
 import './Sidebar.css';
 
-const Sidebar = ({ projects, activeProject, onSelectProject, onNewProject, filter, onFilterChange }) => {
+const Sidebar = ({ projects, activeProject, currentView, onSelectProject, onNavigate, onNewProject, filter, onFilterChange }) => {
     const projectTypes = ['all', 'video', 'audio', 'image', 'document'];
 
     return (
         <aside className="sidebar glass">
             <div className="sidebar-content">
                 <div className="sidebar-section">
-                    <button className="sidebar-item active" onClick={() => onSelectProject(null)}>
+                    <button
+                        className={`sidebar-item ${currentView === 'dashboard' ? 'active' : ''}`}
+                        onClick={() => onNavigate('dashboard')}
+                    >
                         <HomeIcon size={20} />
                         <span>Dashboard</span>
+                    </button>
+                    <button
+                        className={`sidebar-item ${currentView === 'templates' ? 'active' : ''}`}
+                        onClick={() => onNavigate('templates')}
+                    >
+                        <GridIcon size={20} />
+                        <span>Smart Templates</span>
                     </button>
                 </div>
 
