@@ -6,7 +6,7 @@ import ProjectDetailView from './components/ProjectDetailView';
 import Footer from './components/Footer';
 import HelpModal from './components/HelpModal';
 import SettingsModal from './components/SettingsModal';
-import SettingsModal from './components/SettingsModal';
+
 import TemplatesView from './components/TemplatesView';
 import { getDefaultTasks } from './constants/projectTypes';
 import './App.css';
