@@ -1,3 +1,11 @@
+## [1.5.1](https://github.com/skquievreux/media-project-manager/compare/v1.5.0...v1.5.1) (2025-12-08)
+
+
+### Bug Fixes
+
+* resolve syntax error in tool link buttons ([91ba49d](https://github.com/skquievreux/media-project-manager/commit/91ba49d6e3b56431ce08803d57b75b83449e7fee))
+* restore smart template tool integrations in task list ([95e4f84](https://github.com/skquievreux/media-project-manager/commit/95e4f841b4f91e798928c64d39b73734d62e9b71))
+
 # [1.5.0](https://github.com/skquievreux/media-project-manager/compare/v1.4.0...v1.5.0) (2025-12-08)
 
 
