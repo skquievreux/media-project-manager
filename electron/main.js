@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, dialog, shell } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog, shell, protocol } from 'electron';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
@@ -73,6 +73,16 @@ async function createWindow() {
 }
 
 app.whenReady().then(() => {
+    // Register 'media' protocol to serve local files
+    protocol.registerFileProtocol('media', (request, callback) => {
+        const url = request.url.replace('media://', '');
+        try {
+            return callback(decodeURIComponent(url));
+        } catch (error) {
+            console.error('Failed to register protocol', error);
+        }
+    });
+
     createWindow();
 
     app.on('activate', () => {
@@ -87,70 +97,88 @@ app.on('window-all-closed', () => {
 // IPC Handlers for File System Access
 ipcMain.handle('scan-projects', async (event) => {
     try {
-        const downloadsPath = path.join(app.getPath('home'), 'Downloads');
-        logError('scan-projects', `Starting scan in ${downloadsPath}`);
+        // Get all watch folders
+        const defaultDownloads = path.join(app.getPath('home'), 'Downloads');
+        let watchPaths = [defaultDownloads];
 
-        if (!fs.existsSync(downloadsPath)) {
-            logError('scan-projects', `Verzeichnis ${downloadsPath} nicht gefunden.`);
-            return { error: `Verzeichnis ${downloadsPath} nicht gefunden.` };
-        }
-
-        const items = await fs.promises.readdir(downloadsPath, { withFileTypes: true });
-        const directories = items.filter(item => item.isDirectory());
-
-        logError('scan-projects', `Found ${directories.length} directories to check.`);
-
-        const projects = [];
-
-        for (const dir of directories) {
+        // Load additional folders if they exist
+        const watchFoldersJsonPath = path.join(app.getPath('userData'), 'watchFolders.json');
+        if (fs.existsSync(watchFoldersJsonPath)) {
             try {
-                const match = dir.name.match(/^((?:Album|Song|Commercial|Bilder|Projekt))-(.+)$/);
-
-                if (match) {
-                    const type = match[1];
-                    const name = match[2];
-                    const dirPath = path.join(downloadsPath, dir.name);
-
-                    const standardFolders = ['ANFORDERUNGEN', 'KONZEPT', 'UMSETZUNG', 'DOKUMENTATION'];
-                    let hasStructure = false;
-
-                    try {
-                        const subDirs = await fs.promises.readdir(dirPath);
-                        hasStructure = standardFolders.some(folder => subDirs.includes(folder));
-                    } catch (e) {
-                        continue;
-                    }
-
-                    if (hasStructure) {
-                        let details = '';
-                        if (type === 'Album') {
-                            try {
-                                const tracks = (await fs.promises.readdir(dirPath)).filter(f => f.startsWith('TRACK_')).length;
-                                details = `${tracks} Tracks`;
-                            } catch (e) {
-                                details = '0 Tracks';
-                            }
-                        } else {
-                            details = 'Projekt';
-                        }
-
-                        projects.push({
-                            id: dir.name,
-                            name: name,
-                            type: type.toLowerCase(),
-                            path: dirPath,
-                            details: details,
-                            isManaged: true
-                        });
-                    }
-                }
+                const savedFolders = JSON.parse(fs.readFileSync(watchFoldersJsonPath, 'utf-8'));
+                // Ensure unique paths
+                watchPaths = [...new Set([...watchPaths, ...savedFolders])];
             } catch (e) {
-                logError(`scan-projects:loop:${dir.name}`, e.message);
+                logError('scan-projects:load-watch', e.message);
             }
         }
 
-        logError('scan-projects', `Scan complete. Found ${projects.length} projects.`);
-        return { success: true, projects };
+        logError('scan-projects', `Scanning ${watchPaths.length} folders.`);
+        const allProjects = [];
+
+        for (const scanPath of watchPaths) {
+            if (!fs.existsSync(scanPath)) {
+                logError('scan-projects', `Directory ${scanPath} not found.`);
+                continue;
+            }
+
+            try {
+                const items = await fs.promises.readdir(scanPath, { withFileTypes: true });
+                const directories = items.filter(item => item.isDirectory());
+
+                for (const dir of directories) {
+                    try {
+                        const match = dir.name.match(/^((?:Album|Song|Commercial|Bilder|Projekt))-(.+)$/);
+
+                        if (match) {
+                            const type = match[1];
+                            const name = match[2];
+                            const dirPath = path.join(scanPath, dir.name);
+
+                            const standardFolders = ['ANFORDERUNGEN', 'KONZEPT', 'UMSETZUNG', 'DOKUMENTATION'];
+                            let hasStructure = false;
+
+                            try {
+                                const subDirs = await fs.promises.readdir(dirPath);
+                                hasStructure = standardFolders.some(folder => subDirs.includes(folder));
+                            } catch (e) {
+                                continue;
+                            }
+
+                            if (hasStructure) {
+                                let details = '';
+                                if (type === 'Album') {
+                                    try {
+                                        const tracks = (await fs.promises.readdir(dirPath)).filter(f => f.startsWith('TRACK_')).length;
+                                        details = `${tracks} Tracks`;
+                                    } catch (e) {
+                                        details = '0 Tracks';
+                                    }
+                                } else {
+                                    details = 'Projekt';
+                                }
+
+                                allProjects.push({
+                                    id: dir.name,
+                                    name: name,
+                                    type: type.toLowerCase(),
+                                    path: dirPath,
+                                    details: details,
+                                    isManaged: true
+                                });
+                            }
+                        }
+                    } catch (e) {
+                        logError(`scan-projects:loop:${dir.name}`, e.message);
+                    }
+                }
+            } catch (e) {
+                logError(`scan-projects:dir:${scanPath}`, e.message);
+            }
+        }
+
+        logError('scan-projects', `Scan complete. Found ${allProjects.length} projects.`);
+        return { success: true, projects: allProjects };
     } catch (error) {
         logError('scan-projects:main', error.message);
         return { error: error.message };
@@ -247,7 +275,7 @@ ipcMain.handle('scan-project-resources', async (event, projectPath) => {
                             id: Date.now() + Math.random(),
                             name: item.name,
                             type: type,
-                            url: `file://${fullPath}`, // Use file protocol for local display
+                            url: `media://${fullPath}`, // Use custom media protocol for local display
                             path: fullPath,
                             size: (await fs.promises.stat(fullPath)).size
                         });
@@ -287,6 +315,36 @@ ipcMain.handle('load-projects', async () => {
     } catch (error) {
         logError('load-projects', error.message);
         return { error: error.message };
+    }
+});
+
+// Watch Folders Persistence
+const watchFoldersPath = path.join(app.getPath('userData'), 'watchFolders.json');
+
+ipcMain.handle('save-watch-folders', async (event, folders) => {
+    try {
+        fs.writeFileSync(watchFoldersPath, JSON.stringify(folders, null, 2));
+        return { success: true };
+    } catch (error) {
+        logError('save-watch-folders', error.message);
+        return { success: false, error: error.message };
+    }
+});
+
+ipcMain.handle('get-watch-folders', async () => {
+    try {
+        const defaultFolder = path.join(app.getPath('home'), 'Downloads');
+        let folders = [defaultFolder];
+
+        if (fs.existsSync(watchFoldersPath)) {
+            const data = fs.readFileSync(watchFoldersPath, 'utf-8');
+            const saved = JSON.parse(data);
+            folders = [...new Set([...folders, ...saved])];
+        }
+        return { success: true, folders };
+    } catch (error) {
+        logError('get-watch-folders', error.message);
+        return { success: false, error: error.message };
     }
 });
 
@@ -373,7 +431,7 @@ ipcMain.handle('download-file', async (event, url, savePath) => {
                 });
 
                 file.on('error', (error) => {
-                    fs.unlink(fullPath, () => {});
+                    fs.unlink(fullPath, () => { });
                     reject(error);
                 });
             }).on('error', (error) => {
