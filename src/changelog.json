@@ -1,6 +1,38 @@
 {
     "versions": [
         {
+            "version": "1.5.0",
+            "date": "2025-12-08",
+            "type": "minor",
+            "title": "Smart Templates & Integration Update",
+            "changes": [
+                {
+                    "type": "feat",
+                    "text": "Smart Templates View: Dedicated overview for starting new projects with specialized templates."
+                },
+                {
+                    "type": "feat",
+                    "text": "Task Tool Integrations: Restored 'Open Suno', 'Copy Prompt', etc., directly within tasks."
+                },
+                {
+                    "type": "feat",
+                    "text": "File Drop Zone: Drag-and-drop file upload in Project Assets with auto-task completion."
+                },
+                {
+                    "type": "feat",
+                    "text": "Smart Prompts: AI-powered prompt generator for Suno, Cover Art, Stories, and more."
+                },
+                {
+                    "type": "fix",
+                    "text": "Local Media Display: Resolved 'Not allowed to load local resource' errors using secure media:// protocol."
+                },
+                {
+                    "type": "feat",
+                    "text": "Project Management Hook: Enhanced state management for projects and statistics."
+                }
+            ]
+        },
+        {
             "version": "1.1.0",
             "date": "2025-12-02",
             "type": "minor",
