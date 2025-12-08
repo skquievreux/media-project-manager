@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { PROJECT_TYPES } from '../constants/projectTypes';
 import TaskTracker from './TaskTracker';
+import FileDropZone from './FileDropZone';
 import './ProjectDetailView.css';
 
 function ProjectDetailView({ project, onBack, onUpdateProject }) {
@@ -170,6 +171,17 @@ function ProjectDetailView({ project, onBack, onUpdateProject }) {
               <h3>📁 Project Assets</h3>
               <button className="btn-add-asset" onClick={() => setShowAddAsset(true)}>+ Asset hinzufügen</button>
             </div>
+
+            {/* File Drop Zone */}
+            <FileDropZone
+              project={project}
+              onFileUpload={(asset) => {
+                const newAsset = { ...asset, addedAt: Date.now() };
+                const updatedAssets = [...(project.assets || []), newAsset];
+                onUpdateProject({ ...project, assets: updatedAssets });
+              }}
+            />
+
             {showAddAsset && (
               <div className="add-asset-form">
                 <input type="text" placeholder="Asset Name" id="asset-name" />
