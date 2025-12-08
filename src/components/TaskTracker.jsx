@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import ToolLinkButtons from './ToolLinkButtons';
+import SmartPrompts from './SmartPrompts';
 import './TaskTracker.css';
 
 /**
@@ -211,6 +212,21 @@ function TaskTracker({ project, onUpdateProject }) {
   const stats = calculateStats();
   const nextTask = getNextTask();
 
+  // Helper for Smart Prompts
+  const getPromptType = (taskId) => {
+    const types = {
+      'song_generated': 'suno',
+      'cover_created': 'cover',
+      'video_rendered': 'video',
+      'story_written': 'story',
+      'youtube_upload': 'youtube',
+      'social_promotion': 'social',
+      'album_cover': 'cover',
+      'tracks_generated': 'suno'
+    };
+    return types[taskId];
+  };
+
   return (
     <div className="task-tracker">
       {/* Stats Header */}
@@ -349,6 +365,11 @@ function TaskTracker({ project, onUpdateProject }) {
 
                   {/* Tool Links Integration */}
                   <ToolLinkButtons project={project} task={task} />
+
+                  {/* Smart Prompts Integration */}
+                  {task.status === 'in_progress' && getPromptType(task.id) && (
+                    <SmartPrompts project={project} type={getPromptType(task.id)} />
+                  )}
                 </div>
 
                 <div className="task-actions">

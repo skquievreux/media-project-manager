@@ -160,7 +160,7 @@ function ProjectDetailView({ project, onBack, onUpdateProject }) {
         <button className={`tab ${activeTab === 'assets' ? 'active' : ''}`} onClick={() => setActiveTab('assets')}>📁 Assets ({(project.assets || []).length})</button>
         <button className={`tab ${activeTab === 'timeline' ? 'active' : ''}`} onClick={() => setActiveTab('timeline')}>📊 Timeline</button>
         <button className={`tab ${activeTab === 'notes' ? 'active' : ''}`} onClick={() => setActiveTab('notes')}>📝 Notizen</button>
-        <button className={`tab ${activeTab === 'links' ? 'active' : ''}`} onClick={() => setActiveTab('links')}>⚡ Smart Templates</button>
+        <button className={`tab ${activeTab === 'links' ? 'active' : ''}`} onClick={() => setActiveTab('links')}>🔗 Quick Links</button>
       </div>
 
       <div className="tab-content">
@@ -244,7 +244,7 @@ function ProjectDetailView({ project, onBack, onUpdateProject }) {
         )}
         {activeTab === 'links' && (
           <div className="links-panel">
-            <h3>⚡ Smart Templates</h3>
+            <h3>🔗 Quick Links</h3>
             <div className="links-grid">
               <a href="https://dreamedit.runitfast.xyz/" target="_blank" rel="noopener noreferrer" className="link-card"><span className="link-icon">🎨</span><span className="link-label">DreamEdit</span></a>
               <a href="https://app.suno.ai" target="_blank" rel="noopener noreferrer" className="link-card"><span className="link-icon">🎵</span><span className="link-label">Suno</span></a>
