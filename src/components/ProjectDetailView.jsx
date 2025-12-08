@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { PROJECT_TYPES } from '../constants/projectTypes';
 import TaskTracker from './TaskTracker';
 import './ProjectDetailView.css';
@@ -10,6 +10,26 @@ function ProjectDetailView({ project, onBack, onUpdateProject }) {
 
   const projectType = PROJECT_TYPES[project.projectType] || PROJECT_TYPES[project.type] || {};
   const stats = calculateProjectStats();
+
+  // Auto-scan project resources on mount or when path changes
+  useEffect(() => {
+    if (window.electron && project.path) {
+      window.electron.scanProjectResources(project.path).then(result => {
+        if (result.success && result.assets) {
+          // Merge assets avoiding duplicates
+          const currentIds = new Set((project.assets || []).map(a => a.name)); // name as unique key for simplicity
+          const newAssets = result.assets.filter(a => !currentIds.has(a.name));
+
+          if (newAssets.length > 0) {
+            onUpdateProject({
+              ...project,
+              assets: [...(project.assets || []), ...newAssets]
+            });
+          }
+        }
+      });
+    }
+  }, [project.path]);
 
   function calculateProjectStats() {
     const tasks = project.tasks || [];
@@ -145,9 +165,22 @@ function ProjectDetailView({ project, onBack, onUpdateProject }) {
             <div className="assets-grid">
               {(project.assets || []).map(asset => (
                 <div key={asset.id} className="asset-card">
-                  <div className="asset-icon">{asset.type === 'audio' && '🎵'}{asset.type === 'image' && '🖼️'}{asset.type === 'video' && '🎬'}{asset.type === 'document' && '📄'}{asset.type === 'other' && '📦'}</div>
+                  <div className="asset-preview">
+                    {asset.type === 'image' && <img src={asset.url} alt={asset.name} className="asset-preview-img" loading="lazy" />}
+                    {asset.type === 'video' && <video src={asset.url} controls className="asset-preview-video" />}
+                    {asset.type === 'audio' && <audio src={asset.url} controls className="asset-preview-audio" />}
+                    {asset.type !== 'image' && asset.type !== 'video' && asset.type !== 'audio' && (
+                      <div className="asset-icon-large">
+                        {asset.type === 'document' && '📄'}
+                        {asset.type === 'other' && '📦'}
+                      </div>
+                    )}
+                  </div>
                   <div className="asset-info"><div className="asset-name">{asset.name}</div><div className="asset-date">{formatDate(asset.addedAt)}</div></div>
-                  <div className="asset-actions"><button onClick={() => window.open(asset.url, '_blank')}>Öffnen</button><button onClick={() => handleDeleteAsset(asset.id)}>🗑️</button></div>
+                  <div className="asset-actions">
+                    <button onClick={() => window.open(asset.url, '_blank')}>Variations</button>
+                    <button onClick={() => handleDeleteAsset(asset.id)}>🗑️</button>
+                  </div>
                 </div>
               ))}
               {(project.assets || []).length === 0 && <div className="empty-state"><span className="empty-icon">📁</span><p>Noch keine Assets hinzugefügt</p></div>}
