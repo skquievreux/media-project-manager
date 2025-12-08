@@ -1,3 +1,10 @@
+# [1.4.0](https://github.com/skquievreux/media-project-manager/compare/v1.3.0...v1.4.0) (2025-12-08)
+
+
+### Features
+
+* add smart template button and watch folder support ([ac19c9a](https://github.com/skquievreux/media-project-manager/commit/ac19c9a2c2c1074847ca3808980e2cd54cc876ee))
+
 # [1.3.0](https://github.com/skquievreux/media-project-manager/compare/v1.2.0...v1.3.0) (2025-12-08)
 
 
