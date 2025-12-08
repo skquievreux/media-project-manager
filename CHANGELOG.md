@@ -1,3 +1,17 @@
+# [1.5.0](https://github.com/skquievreux/media-project-manager/compare/v1.4.0...v1.5.0) (2025-12-08)
+
+
+### Bug Fixes
+
+* register media protocol for local file access ([d669845](https://github.com/skquievreux/media-project-manager/commit/d66984596ac88be619e85b519160fda199dd4380))
+* remove duplicate import ([f7e8ba9](https://github.com/skquievreux/media-project-manager/commit/f7e8ba933cc08f945643a0b989354a70884b36b9))
+
+
+### Features
+
+* add smart templates view and navigation ([2e6976f](https://github.com/skquievreux/media-project-manager/commit/2e6976f70fbba9e3cc83c454cc733dd324ed8265))
+* restored asset players and autoscan ([1ac8021](https://github.com/skquievreux/media-project-manager/commit/1ac8021b924690236ddfbd6564bbee09405cf3c5))
+
 # [1.4.0](https://github.com/skquievreux/media-project-manager/compare/v1.3.0...v1.4.0) (2025-12-08)
 
 
