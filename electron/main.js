@@ -79,9 +79,16 @@ app.whenReady().then(() => {
         // Decode URL to handle spaces and special chars
         url = decodeURIComponent(url);
 
-        // Handle Windows drive letters (e.g., /C:/path -> C:/path)
-        if (process.platform === 'win32' && url.startsWith('/') && url.match(/^\/[a-zA-Z]:/)) {
-            url = url.slice(1);
+        // Handle Windows drive letters
+        // Browser might send media://C:/ or media:///C:/
+        // The replace('media://', '') might leave 'C:/...' or '/C:/...'
+
+        if (process.platform === 'win32') {
+            // If we have a leading slash followed by a drive letter (e.g. /C:), strip the slash
+            if (url.startsWith('/') && url.match(/^\/[a-zA-Z]:/)) {
+                url = url.slice(1);
+            }
+            // Else if it already looks like C:/..., leave it
         }
 
         try {

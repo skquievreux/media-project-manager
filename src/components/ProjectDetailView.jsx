@@ -129,22 +129,33 @@ function ProjectDetailView({ project, onBack, onUpdateProject }) {
   const getSafeUrl = (url) => {
     if (!url) return '';
     if (url.startsWith('blob:') || url.startsWith('http')) return url;
-    if (url.startsWith('media://')) return url;
 
-    // Windows path handling (drive letter)
-    if (url.match(/^[a-zA-Z]:/)) {
-      // Ensure forward slashes and prepend media://
-      return `media://${url.replace(/\\/g, '/')}`;
+    // Normalize string to use forward slashes (fixes Windows backslash issues in src attributes)
+    let clean = url.replace(/\\/g, '/');
+
+    // Already has protocol? Safe to return unless it needs fixing?
+    if (clean.startsWith('media://')) {
+      // Ensure we don't have broken slashes if needed, usually media://C:/ is fine if backend handles it
+      // Check if we need to ensure triple slash for standard compliance if normalization fails
+      return clean;
     }
 
-    // Unix/Mac path handling (leading slash)
-    if (url.startsWith('/') && !url.startsWith('//')) {
-      return `media://${url}`;
+    if (clean.startsWith('file://')) {
+      return clean.replace('file://', 'media://');
     }
 
-    if (url.startsWith('file://')) return url.replace('file://', 'media://');
+    // Windows drive path (C:/...) -> media://C:/...
+    // Some browsers prefer media:///C:/... for local scheme, lets be safe with standard protocol format
+    if (clean.match(/^[a-zA-Z]:/)) {
+      return `media:///${clean}`;
+    }
 
-    return url;
+    // Unix path
+    if (clean.startsWith('/') && !clean.startsWith('//')) {
+      return `media://${clean}`;
+    }
+
+    return clean;
   };
 
   const circleLength = 2 * Math.PI * 52;
