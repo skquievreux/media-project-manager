@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { PROJECT_TYPES } from '../constants/projectTypes';
 import TaskTracker from './TaskTracker';
 import FileDropZone from './FileDropZone';
+import SmartPrompts from './SmartPrompts';
 import './ProjectDetailView.css';
 
 function ProjectDetailView({ project, onBack, onUpdateProject }) {
@@ -170,6 +171,11 @@ function ProjectDetailView({ project, onBack, onUpdateProject }) {
             <div className="assets-header">
               <h3>📁 Project Assets</h3>
               <button className="btn-add-asset" onClick={() => setShowAddAsset(true)}>+ Asset hinzufügen</button>
+            </div>
+
+            {/* Smart Prompts Integration in Assets */}
+            <div className="assets-prompts-section">
+              <SmartPrompts project={project} type="suno" />
             </div>
 
             {/* File Drop Zone */}
