@@ -1,3 +1,10 @@
+# [1.3.0](https://github.com/skquievreux/media-project-manager/compare/v1.2.0...v1.3.0) (2025-12-08)
+
+
+### Features
+
+* updated tool links and DreamEdit URL ([e02958c](https://github.com/skquievreux/media-project-manager/commit/e02958c5f2cf02e920d907ddd43bba26139d4b43))
+
 # [1.2.0](https://github.com/skquievreux/media-project-manager/compare/v1.1.0...v1.2.0) (2025-12-08)
 
 
