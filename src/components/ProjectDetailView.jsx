@@ -14,6 +14,17 @@ function ProjectDetailView({ project, onBack, onUpdateProject }) {
   const projectType = PROJECT_TYPES[project.projectType] || PROJECT_TYPES[project.type] || {};
   const stats = calculateProjectStats();
 
+  // Helper for opening files via Electron
+  const openExternal = (path) => {
+    if (window.electron && window.electron.openPath) {
+      // Convert media:// back to file path if needed, or just send the raw path
+      const cleanPath = path.replace('media://', '');
+      window.electron.openPath(cleanPath);
+    } else {
+      window.open(path, '_blank');
+    }
+  };
+
   // Auto-scan project resources on mount or when path changes
   useEffect(() => {
     if (window.electron && project.path) {
@@ -119,9 +130,20 @@ function ProjectDetailView({ project, onBack, onUpdateProject }) {
     if (!url) return '';
     if (url.startsWith('blob:') || url.startsWith('http')) return url;
     if (url.startsWith('media://')) return url;
+
+    // Windows path handling (drive letter)
+    if (url.match(/^[a-zA-Z]:/)) {
+      // Ensure forward slashes and prepend media://
+      return `media://${url.replace(/\\/g, '/')}`;
+    }
+
+    // Unix/Mac path handling (leading slash)
+    if (url.startsWith('/') && !url.startsWith('//')) {
+      return `media://${url}`;
+    }
+
     if (url.startsWith('file://')) return url.replace('file://', 'media://');
-    // Handle raw Windows paths
-    if (url.match(/^[a-zA-Z]:\\/)) return `media://${url}`;
+
     return url;
   };
 
@@ -231,7 +253,7 @@ function ProjectDetailView({ project, onBack, onUpdateProject }) {
                   </div>
                   <div className="asset-info"><div className="asset-name">{asset.name}</div><div className="asset-date">{formatDate(asset.addedAt)}</div></div>
                   <div className="asset-actions">
-                    <button onClick={() => window.open(asset.url, '_blank')}>Variations</button>
+                    <button onClick={() => openExternal(asset.url)}>Öffnen</button>
                     <button onClick={() => handleDeleteAsset(asset.id)}>🗑️</button>
                   </div>
                 </div>

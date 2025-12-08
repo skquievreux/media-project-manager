@@ -75,9 +75,17 @@ async function createWindow() {
 app.whenReady().then(() => {
     // Register 'media' protocol to serve local files
     protocol.registerFileProtocol('media', (request, callback) => {
-        const url = request.url.replace('media://', '');
+        let url = request.url.replace('media://', '');
+        // Decode URL to handle spaces and special chars
+        url = decodeURIComponent(url);
+
+        // Handle Windows drive letters (e.g., /C:/path -> C:/path)
+        if (process.platform === 'win32' && url.startsWith('/') && url.match(/^\/[a-zA-Z]:/)) {
+            url = url.slice(1);
+        }
+
         try {
-            return callback(decodeURIComponent(url));
+            return callback(url);
         } catch (error) {
             console.error('Failed to register protocol', error);
         }
@@ -179,71 +187,59 @@ ipcMain.handle('scan-projects', async (event) => {
 
         logError('scan-projects', `Scan complete. Found ${allProjects.length} projects.`);
         return { success: true, projects: allProjects };
-    } catch (error) {
-        logError('scan-projects:main', error.message);
-        return { error: error.message };
-    }
-});
 
-// IPC Handler for Manual Folder Selection
-ipcMain.handle('select-scan-folder', async () => {
-    const result = await dialog.showOpenDialog(mainWindow, {
-        properties: ['openDirectory'],
-        title: 'Ordner zum Scannen auswählen'
-    });
-
-    if (result.canceled || result.filePaths.length === 0) {
-        return { success: false, canceled: true };
-    }
-
-    const scanPath = result.filePaths[0];
-    logError('select-scan-folder', `Scanning manually selected path: ${scanPath}`);
-
-    try {
-        const items = await fs.promises.readdir(scanPath, { withFileTypes: true });
-        const directories = items.filter(item => item.isDirectory());
-        const projects = [];
-
-        for (const dir of directories) {
-            try {
-                const match = dir.name.match(/^((?:Album|Song|Commercial|Bilder|Projekt))-(.+)$/);
-                if (match) {
-                    const type = match[1];
-                    const name = match[2];
-                    const dirPath = path.join(scanPath, dir.name);
-
-                    const standardFolders = ['ANFORDERUNGEN', 'KONZEPT', 'UMSETZUNG', 'DOKUMENTATION'];
-                    let hasStructure = false;
-                    try {
-                        const subDirs = await fs.promises.readdir(dirPath);
-                        hasStructure = standardFolders.some(folder => subDirs.includes(folder));
-                    } catch (e) { continue; }
-
-                    if (hasStructure) {
-                        let details = 'Projekt';
-                        if (type === 'Album') {
-                            try {
-                                const tracks = (await fs.promises.readdir(dirPath)).filter(f => f.startsWith('TRACK_')).length;
-                                details = `${tracks} Tracks`;
-                            } catch (e) { }
-                        }
-                        projects.push({
-                            id: dir.name,
-                            name: name,
-                            type: type.toLowerCase(),
-                            path: dirPath,
-                            details: details,
-                            isManaged: true
-                        });
-                    }
-                }
-            } catch (e) { }
+        if (result.canceled || result.filePaths.length === 0) {
+            return { success: false, canceled: true };
         }
-        return { success: true, projects };
-    } catch (error) {
-        return { error: error.message };
-    }
-});
+
+        const scanPath = result.filePaths[0];
+        logError('select-scan-folder', `Scanning manually selected path: ${scanPath}`);
+
+        try {
+            const items = await fs.promises.readdir(scanPath, { withFileTypes: true });
+            const directories = items.filter(item => item.isDirectory());
+            const projects = [];
+
+            for (const dir of directories) {
+                try {
+                    const match = dir.name.match(/^((?:Album|Song|Commercial|Bilder|Projekt))-(.+)$/);
+                    if (match) {
+                        const type = match[1];
+                        const name = match[2];
+                        const dirPath = path.join(scanPath, dir.name);
+
+                        const standardFolders = ['ANFORDERUNGEN', 'KONZEPT', 'UMSETZUNG', 'DOKUMENTATION'];
+                        let hasStructure = false;
+                        try {
+                            const subDirs = await fs.promises.readdir(dirPath);
+                            hasStructure = standardFolders.some(folder => subDirs.includes(folder));
+                        } catch (e) { continue; }
+
+                        if (hasStructure) {
+                            let details = 'Projekt';
+                            if (type === 'Album') {
+                                try {
+                                    const tracks = (await fs.promises.readdir(dirPath)).filter(f => f.startsWith('TRACK_')).length;
+                                    details = `${tracks} Tracks`;
+                                } catch (e) { }
+                            }
+                            projects.push({
+                                id: dir.name,
+                                name: name,
+                                type: type.toLowerCase(),
+                                path: dirPath,
+                                details: details,
+                                isManaged: true
+                            });
+                        }
+                    }
+                } catch (e) { }
+            }
+            return { success: true, projects };
+        } catch (error) {
+            return { error: error.message };
+        }
+    });
 
 // IPC Handler for Scanning Project Resources
 ipcMain.handle('scan-project-resources', async (event, projectPath) => {
