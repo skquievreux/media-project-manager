@@ -224,7 +224,14 @@ function TaskTracker({ project, onUpdateProject }) {
       'album_cover': 'cover',
       'tracks_generated': 'suno'
     };
-    return types[taskId];
+
+    // Check for exact match or strict prefix match (task.id contains dynamic suffix)
+    for (const [key, type] of Object.entries(types)) {
+      if (taskId === key || taskId.startsWith(key + '_')) {
+        return type;
+      }
+    }
+    return null;
   };
 
   return (
@@ -425,8 +432,10 @@ function TaskTracker({ project, onUpdateProject }) {
                     <button
                       className="btn-action skip"
                       onClick={() => {
-                        const reason = prompt('Grund für Skip (optional):');
-                        if (reason !== null) skipTask(task.id, reason);
+                        // prompt() is often blocked in Electron/Apps, using simple confirm for now
+                        if (confirm('Möchtest du diesen Task wirklich überspringen?')) {
+                          skipTask(task.id, 'Skipped by user');
+                        }
                       }}
                       title="Skip"
                     >
