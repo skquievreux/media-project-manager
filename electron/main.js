@@ -1,8 +1,15 @@
-import { app, BrowserWindow, ipcMain, dialog } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog, shell } from 'electron';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
 import http from 'http';
+import https from 'https';
+import {
+    saveApiKey,
+    getApiKey,
+    deleteApiKey,
+    listApiKeys
+} from './apiKeyManager.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -282,3 +289,111 @@ ipcMain.handle('load-projects', async () => {
         return { error: error.message };
     }
 });
+
+// ============================================================================
+// API Key Management Handlers
+// ============================================================================
+
+ipcMain.handle('save-api-key', async (event, service, key) => {
+    try {
+        const result = saveApiKey(service, key);
+        if (result.success) {
+            console.log(`✅ API key for ${service} saved successfully`);
+        }
+        return result;
+    } catch (error) {
+        logError('save-api-key', error.message);
+        return { success: false, error: error.message };
+    }
+});
+
+ipcMain.handle('get-api-key', async (event, service) => {
+    try {
+        return getApiKey(service);
+    } catch (error) {
+        logError('get-api-key', error.message);
+        return { success: false, error: error.message };
+    }
+});
+
+ipcMain.handle('delete-api-key', async (event, service) => {
+    try {
+        const result = deleteApiKey(service);
+        if (result.success) {
+            console.log(`🗑️ API key for ${service} deleted successfully`);
+        }
+        return result;
+    } catch (error) {
+        logError('delete-api-key', error.message);
+        return { success: false, error: error.message };
+    }
+});
+
+ipcMain.handle('list-api-keys', async () => {
+    try {
+        return listApiKeys();
+    } catch (error) {
+        logError('list-api-keys', error.message);
+        return { success: false, error: error.message };
+    }
+});
+
+// ============================================================================
+// File Operations for API Results
+// ============================================================================
+
+ipcMain.handle('download-file', async (event, url, savePath) => {
+    try {
+        return new Promise((resolve, reject) => {
+            const protocol = url.startsWith('https') ? https : http;
+            const fullPath = path.isAbsolute(savePath)
+                ? savePath
+                : path.join(app.getPath('downloads'), savePath);
+
+            // Ensure directory exists
+            const dir = path.dirname(fullPath);
+            if (!fs.existsSync(dir)) {
+                fs.mkdirSync(dir, { recursive: true });
+            }
+
+            const file = fs.createWriteStream(fullPath);
+
+            protocol.get(url, (response) => {
+                if (response.statusCode !== 200) {
+                    reject(new Error(`Download failed: ${response.statusCode}`));
+                    return;
+                }
+
+                response.pipe(file);
+
+                file.on('finish', () => {
+                    file.close();
+                    console.log(`✅ File downloaded: ${fullPath}`);
+                    resolve({ success: true, path: fullPath });
+                });
+
+                file.on('error', (error) => {
+                    fs.unlink(fullPath, () => {});
+                    reject(error);
+                });
+            }).on('error', (error) => {
+                reject(error);
+            });
+        });
+    } catch (error) {
+        logError('download-file', error.message);
+        return { success: false, error: error.message };
+    }
+});
+
+ipcMain.handle('open-file', async (event, filePath) => {
+    try {
+        await shell.openPath(filePath);
+        return { success: true };
+    } catch (error) {
+        logError('open-file', error.message);
+        return { success: false, error: error.message };
+    }
+});
+
+console.log('✅ All IPC handlers registered successfully');
