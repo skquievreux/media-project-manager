@@ -1,3 +1,10 @@
+## [1.5.2](https://github.com/skquievreux/media-project-manager/compare/v1.5.1...v1.5.2) (2025-12-08)
+
+
+### Bug Fixes
+
+* update asset URLs from scan to use media protocol ([36b7ccc](https://github.com/skquievreux/media-project-manager/commit/36b7cccc40f95018e4e64b728b9183731ba921d5))
+
 ## [1.5.1](https://github.com/skquievreux/media-project-manager/compare/v1.5.0...v1.5.1) (2025-12-08)
 
 
