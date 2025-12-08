@@ -20,7 +20,7 @@ export const API_CONFIG = {
 
   // DreamEdit API (Image Generation)
   dreamedit: {
-    baseUrl: import.meta.env.VITE_DREAMEDIT_API_URL || 'https://api.dreamedit.ai/v1',
+    baseUrl: import.meta.env.VITE_DREAMEDIT_API_URL || 'https://dreamedit.runitfast.xyz/api/v1',
     timeout: 120000, // 2min for image generation
     retries: 3,
     endpoints: {

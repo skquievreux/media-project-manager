@@ -61,8 +61,14 @@ function ToolLinkButtons({ project, task }) {
         {
           icon: '🎨',
           label: 'DreamEdit öffnen',
-          url: 'https://dreamedit.ai',
+          url: 'https://dreamedit.runitfast.xyz/',
           color: '#f59e0b'
+        },
+        {
+          icon: '🖼️',
+          label: 'Artify öffnen',
+          url: 'https://artify.unlock-your-song.de/',
+          color: '#ec4899'
         },
         {
           icon: '📋',
@@ -105,30 +111,50 @@ function ToolLinkButtons({ project, task }) {
         }
       ],
 
-      'distrokid_upload': [
         {
-          icon: '💿',
-          label: 'DistroKid öffnen',
+      icon: '💿',
+        label: 'DistroKid öffnen',
           url: 'https://distrokid.com',
-          color: '#10b981'
-        }
+            color: '#10b981'
+    },
+    {
+      icon: '📊',
+        label: 'Spotify Artists',
+          url: 'https://artists.spotify.com/c/de/artist/0hyYhfUiuBwBbPQZdM8D2d/home',
+            color: '#1db954'
+    }
       ],
 
-      // Album Tasks
-      'album_cover': [
-        {
-          icon: '🎨',
-          label: 'DreamEdit öffnen',
-          url: 'https://dreamedit.ai',
-          color: '#f59e0b'
-        },
-        {
-          icon: '📋',
-          label: 'Album Cover Prompt',
-          action: () => copyToClipboard(generateAlbumCoverPrompt(project)),
-          color: '#3b82f6'
-        }
-      ],
+  'social_promotion': [
+    {
+      icon: '📧',
+      label: 'Sendfox öffnen',
+      url: 'https://sendfox.com/dashboard/emails',
+      color: '#f97316'
+    }
+  ],
+
+    // Album Tasks
+    'album_cover': [
+      {
+        icon: '🎨',
+        label: 'DreamEdit öffnen',
+        url: 'https://dreamedit.runitfast.xyz/',
+        color: '#f59e0b'
+      },
+      {
+        icon: '🖼️',
+        label: 'Artify öffnen',
+        url: 'https://artify.unlock-your-song.de/',
+        color: '#ec4899'
+      },
+      {
+        icon: '📋',
+        label: 'Album Cover Prompt',
+        action: () => copyToClipboard(generateAlbumCoverPrompt(project)),
+        color: '#3b82f6'
+      }
+    ],
 
       'tracks_generated': [
         {
@@ -139,82 +165,94 @@ function ToolLinkButtons({ project, task }) {
         }
       ],
 
-      // Kinderbuch Tasks
-      'story_written': [
-        {
-          icon: '✍️',
-          label: 'Claude öffnen',
-          url: 'https://claude.ai',
-          color: '#8b5cf6'
-        },
-        {
-          icon: '📋',
-          label: 'Story Prompt',
-          action: () => copyToClipboard(generateStoryPrompt(project)),
-          color: '#3b82f6'
-        }
-      ],
+        // Kinderbuch Tasks
+        'story_written': [
+          {
+            icon: '✍️',
+            label: 'Claude öffnen',
+            url: 'https://claude.ai',
+            color: '#8b5cf6'
+          },
+          {
+            icon: '📖',
+            label: 'Visual Story öffnen',
+            url: 'https://visual-story.unlock-your-song.de/',
+            color: '#10b981'
+          },
+          {
+            icon: '📋',
+            label: 'Story Prompt',
+            action: () => copyToClipboard(generateStoryPrompt(project)),
+            color: '#3b82f6'
+          }
+        ],
 
-      'illustrations': [
-        {
-          icon: '🎨',
-          label: 'DreamEdit öffnen',
-          url: 'https://dreamedit.ai',
-          color: '#f59e0b'
-        }
-      ],
+          'illustrations': [
+            {
+              icon: '🎨',
+              label: 'DreamEdit öffnen',
+              url: 'https://dreamedit.runitfast.xyz/',
+              color: '#f59e0b'
+            },
+            {
+              icon: '🖼️',
+              label: 'Artify öffnen',
+              url: 'https://artify.unlock-your-song.de/',
+              color: '#ec4899'
+            }
+          ],
 
-      'audio_record': [
-        {
-          icon: '🎙️',
-          label: 'ElevenLabs öffnen',
-          url: 'https://elevenlabs.io',
-          color: '#6366f1'
-        }
-      ]
-    };
+            'audio_record': [
+              {
+                icon: '🎙️',
+                label: 'ElevenLabs öffnen',
+                url: 'https://elevenlabs.io',
+                color: '#6366f1'
+              }
+            ]
+};
 
-    return links[task.id] || [];
+return links[task.id] || [];
   };
 
-  const links = getToolLinks();
+const links = getToolLinks();
 
-  if (links.length === 0) return null;
+if (links.length === 0) return null;
 
-  return (
-    <div className="tool-link-buttons">
-      <div className="tool-links-header">
-        <span className="tools-icon">🔧</span>
-        <span className="tools-label">Quick Actions</span>
-      </div>
-
-      <div className="tool-links-grid">
-        {links.map((link, index) => (
-          <button
-            key={index}
-            className="tool-link-btn"
-            style={{ '--btn-color': link.color }}
-            onClick={() => {
-              if (link.action) {
-                link.action();
-              } else if (link.url) {
-                window.open(link.url, '_blank', 'noopener,noreferrer');
-              }
-            }}
-          >
-            <span className="btn-icon">{link.icon}</span>
-            <span className="btn-label">{link.label}</span>
-          </button>
-        ))}
-      </div>
-
-      {copied && (
-        <div className="copy-notification">
-          ✓ In Zwischenablage kopiert!
-        </div>
-      )}
+return (
+  <div className="tool-link-buttons">
+    <div className="tool-links-header">
+      <span className="tools-icon">🔧</span>
+      <span className="tools-label">Quick Actions</span>
     </div>
-  );
+
+    <div className="tool-links-grid">
+      {links.map((link, index) => (
+        <button
+          key={index}
+          className="tool-link-btn"
+          style={{ '--btn-color': link.color }}
+          onClick={() => {
+            if (link.action) {
+              link.action();
+            } else if (link.url) {
+              window.open(link.url, '_blank', 'noopener,noreferrer');
+            }
+          }}
+        >
+          <span className="btn-icon">{link.icon}</span>
+          <span className="btn-label">{link.label}</span>
+        </button>
+      ))}
+    </div>
+
+    {copied && (
+      <div className="copy-notification">
+        ✓ In Zwischenablage kopiert!
+      </div>
+    )}
+  </div>
+);
 }
 
 // ============================================================================

@@ -175,9 +175,13 @@ function ProjectDetailView({ project, onBack, onUpdateProject }) {
           <div className="links-panel">
             <h3>🔗 Quick Links</h3>
             <div className="links-grid">
-              <a href="https://dreamedit.ai" target="_blank" rel="noopener noreferrer" className="link-card"><span className="link-icon">🎨</span><span className="link-label">DreamEdit</span></a>
+              <a href="https://dreamedit.runitfast.xyz/" target="_blank" rel="noopener noreferrer" className="link-card"><span className="link-icon">🎨</span><span className="link-label">DreamEdit</span></a>
               <a href="https://app.suno.ai" target="_blank" rel="noopener noreferrer" className="link-card"><span className="link-icon">🎵</span><span className="link-label">Suno</span></a>
               <a href="https://distrokid.com" target="_blank" rel="noopener noreferrer" className="link-card"><span className="link-icon">💿</span><span className="link-label">DistroKid</span></a>
+              <a href="https://visual-story.unlock-your-song.de/" target="_blank" rel="noopener noreferrer" className="link-card"><span className="link-icon">📖</span><span className="link-label">Visual Story</span></a>
+              <a href="https://artify.unlock-your-song.de/" target="_blank" rel="noopener noreferrer" className="link-card"><span className="link-icon">🖼️</span><span className="link-label">Artify</span></a>
+              <a href="https://artists.spotify.com/c/de/artist/0hyYhfUiuBwBbPQZdM8D2d/home" target="_blank" rel="noopener noreferrer" className="link-card"><span className="link-icon">📊</span><span className="link-label">Spotify Artists</span></a>
+              <a href="https://sendfox.com/dashboard/emails" target="_blank" rel="noopener noreferrer" className="link-card"><span className="link-icon">📧</span><span className="link-label">Sendfox</span></a>
             </div>
           </div>
         )}
