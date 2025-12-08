@@ -9,6 +9,7 @@ function ProjectDetailView({ project, onBack, onUpdateProject }) {
   const [activeTab, setActiveTab] = useState('tasks');
   const [notes, setNotes] = useState(project.notes || '');
   const [showAddAsset, setShowAddAsset] = useState(false);
+  const [promptType, setPromptType] = useState('suno'); // State for the new tab selector
 
   const projectType = PROJECT_TYPES[project.projectType] || PROJECT_TYPES[project.type] || {};
   const stats = calculateProjectStats();
@@ -161,6 +162,7 @@ function ProjectDetailView({ project, onBack, onUpdateProject }) {
         <button className={`tab ${activeTab === 'assets' ? 'active' : ''}`} onClick={() => setActiveTab('assets')}>📁 Assets ({(project.assets || []).length})</button>
         <button className={`tab ${activeTab === 'timeline' ? 'active' : ''}`} onClick={() => setActiveTab('timeline')}>📊 Timeline</button>
         <button className={`tab ${activeTab === 'notes' ? 'active' : ''}`} onClick={() => setActiveTab('notes')}>📝 Notizen</button>
+        <button className={`tab ${activeTab === 'prompts' ? 'active' : ''}`} onClick={() => setActiveTab('prompts')}>✨ AI Prompts</button>
         <button className={`tab ${activeTab === 'links' ? 'active' : ''}`} onClick={() => setActiveTab('links')}>🔗 Quick Links</button>
       </div>
 
@@ -246,6 +248,20 @@ function ProjectDetailView({ project, onBack, onUpdateProject }) {
             <h3>📝 Project Notes</h3>
             <textarea className="notes-editor" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Notizen zu diesem Projekt..." />
             <button className="btn-save-notes" onClick={handleSaveNotes}>💾 Notizen speichern</button>
+          </div>
+        )}
+        {activeTab === 'prompts' && (
+          <div className="prompts-panel">
+            <h3>✨ AI Prompt Generator</h3>
+            <div className="prompt-type-selector" style={{ marginBottom: '1rem', display: 'flex', gap: '0.5rem' }}>
+              <button className={`btn-filter ${promptType === 'suno' ? 'active' : ''}`} onClick={() => setPromptType('suno')}>🎵 Musik</button>
+              <button className={`btn-filter ${promptType === 'cover' ? 'active' : ''}`} onClick={() => setPromptType('cover')}>🎨 Cover</button>
+              <button className={`btn-filter ${promptType === 'video' ? 'active' : ''}`} onClick={() => setPromptType('video')}>🎬 Video</button>
+              <button className={`btn-filter ${promptType === 'story' ? 'active' : ''}`} onClick={() => setPromptType('story')}>📖 Story</button>
+              <button className={`btn-filter ${promptType === 'youtube' ? 'active' : ''}`} onClick={() => setPromptType('youtube')}>📺 YouTube</button>
+              <button className={`btn-filter ${promptType === 'social' ? 'active' : ''}`} onClick={() => setPromptType('social')}>📱 Social</button>
+            </div>
+            <SmartPrompts project={project} type={promptType} />
           </div>
         )}
         {activeTab === 'links' && (
