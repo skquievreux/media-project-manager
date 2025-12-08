@@ -225,7 +225,34 @@ function SettingsModal({ onClose }) {
           {activeTab === 'general' && (
             <div className="general-panel">
               <h3>⚙️ Allgemeine Einstellungen</h3>
-              <p className="coming-soon">Weitere Einstellungen kommen bald...</p>
+
+              <div className="setting-group">
+                <h4>📁 Automatische Scan-Ordner</h4>
+                <p className="setting-description">Ordner, die automatisch nach neuen Projekten durchsucht werden.</p>
+
+                <div className="watch-folders-list">
+                  {/* Default Downloads */}
+                  <div className="watch-folder-item">
+                    <span className="folder-icon">📂</span>
+                    <span className="folder-path">Downloads (Standard)</span>
+                    <span className="folder-status-badge">Aktiv</span>
+                  </div>
+
+                  {/* Additional folders would go here */}
+                  <button className="btn-add-folder" onClick={async () => {
+                    if (window.electron) {
+                      const result = await window.electron.selectScanFolder();
+                      if (result.success && result.projects) {
+                        alert(`${result.projects.length} Projekte gefunden!`);
+                      }
+                    } else {
+                      alert('Nur in der App verfügbar');
+                    }
+                  }}>
+                    + Ordner hinzufügen
+                  </button>
+                </div>
+              </div>
             </div>
           )}
 

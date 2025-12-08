@@ -77,6 +77,9 @@ function ProjectDetailView({ project, onBack, onUpdateProject }) {
       <div className="detail-header">
         <button className="btn-back" onClick={onBack}>← Zurück</button>
         <div className="header-actions">
+          <button className="btn-secondary" onClick={() => onUpdateProject({ ...project, tasks: [...(project.tasks || []), ...(projectType.defaultTasks?.filter(t => !project.tasks?.some(pt => pt.label === t.label)) || [])] })}>
+            🪄 Smart Template anwenden
+          </button>
           <button className="btn-folder" onClick={openFolder} disabled={!project.folder}>📁 Ordner öffnen</button>
         </div>
       </div>
