@@ -4,13 +4,13 @@ import './SmartPrompts.css';
 /**
  * SmartPrompts Component
  * AI-powered prompt generator for various tools
- *
+ * 
  * Features:
  * - Generate optimized prompts for Suno, DreamEdit, etc.
  * - Template system with customization
  * - One-click copy to clipboard
  * - History of generated prompts
- *
+ * 
  * Built by Claude for Don Key
  */
 function SmartPrompts({ project, type = 'suno' }) {
@@ -130,7 +130,7 @@ function SmartPrompts({ project, type = 'suno' }) {
             <p>{info.description}</p>
           </div>
         </div>
-        <button
+        <button 
           className="btn-generate"
           onClick={generatePrompt}
         >
@@ -183,7 +183,7 @@ function SmartPrompts({ project, type = 'suno' }) {
           <h5>📚 Letzte Prompts</h5>
           <div className="history-list">
             {history.map(entry => (
-              <div
+              <div 
                 key={entry.id}
                 className="history-item"
                 onClick={() => {
@@ -357,7 +357,7 @@ ${genre ? `🎵 Genre: ${genre}\n` : ''}🎧 Jetzt streamen auf allen Plattforme
 
 ${hashtags}
 
-Produziert mit ❤️
+Produziert mit ❤️ 
 © ${new Date().getFullYear()} ${artist}`;
 }
 

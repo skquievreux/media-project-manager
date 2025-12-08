@@ -1,15 +1,29 @@
 import { useState, useEffect } from 'react';
 import { PROJECT_TYPES } from '../constants/projectTypes';
 import TaskTracker from './TaskTracker';
+import FileDropZone from './FileDropZone';
+import SmartPrompts from './SmartPrompts';
 import './ProjectDetailView.css';
 
 function ProjectDetailView({ project, onBack, onUpdateProject }) {
   const [activeTab, setActiveTab] = useState('tasks');
   const [notes, setNotes] = useState(project.notes || '');
   const [showAddAsset, setShowAddAsset] = useState(false);
+  const [promptType, setPromptType] = useState('suno'); // State for the new tab selector
 
   const projectType = PROJECT_TYPES[project.projectType] || PROJECT_TYPES[project.type] || {};
   const stats = calculateProjectStats();
+
+  // Helper for opening files via Electron
+  const openExternal = (path) => {
+    if (window.electron && window.electron.openPath) {
+      // Convert media:// back to file path if needed, or just send the raw path
+      const cleanPath = path.replace('media://', '');
+      window.electron.openPath(cleanPath);
+    } else {
+      window.open(path, '_blank');
+    }
+  };
 
   // Auto-scan project resources on mount or when path changes
   useEffect(() => {
@@ -112,6 +126,27 @@ function ProjectDetailView({ project, onBack, onUpdateProject }) {
     if (project.folder) window.open(`file:///${project.folder}`, '_blank');
   };
 
+  const getSafeUrl = (url) => {
+    if (!url) return '';
+    if (url.startsWith('blob:') || url.startsWith('http')) return url;
+    if (url.startsWith('media://')) return url;
+
+    // Windows path handling (drive letter)
+    if (url.match(/^[a-zA-Z]:/)) {
+      // Ensure forward slashes and prepend media://
+      return `media://${url.replace(/\\/g, '/')}`;
+    }
+
+    // Unix/Mac path handling (leading slash)
+    if (url.startsWith('/') && !url.startsWith('//')) {
+      return `media://${url}`;
+    }
+
+    if (url.startsWith('file://')) return url.replace('file://', 'media://');
+
+    return url;
+  };
+
   const circleLength = 2 * Math.PI * 52;
   const progressOffset = circleLength * (1 - stats.progress / 100);
 
@@ -159,6 +194,7 @@ function ProjectDetailView({ project, onBack, onUpdateProject }) {
         <button className={`tab ${activeTab === 'assets' ? 'active' : ''}`} onClick={() => setActiveTab('assets')}>📁 Assets ({(project.assets || []).length})</button>
         <button className={`tab ${activeTab === 'timeline' ? 'active' : ''}`} onClick={() => setActiveTab('timeline')}>📊 Timeline</button>
         <button className={`tab ${activeTab === 'notes' ? 'active' : ''}`} onClick={() => setActiveTab('notes')}>📝 Notizen</button>
+        <button className={`tab ${activeTab === 'prompts' ? 'active' : ''}`} onClick={() => setActiveTab('prompts')}>✨ AI Prompts</button>
         <button className={`tab ${activeTab === 'links' ? 'active' : ''}`} onClick={() => setActiveTab('links')}>🔗 Quick Links</button>
       </div>
 
@@ -170,6 +206,22 @@ function ProjectDetailView({ project, onBack, onUpdateProject }) {
               <h3>📁 Project Assets</h3>
               <button className="btn-add-asset" onClick={() => setShowAddAsset(true)}>+ Asset hinzufügen</button>
             </div>
+
+            {/* Smart Prompts Integration in Assets */}
+            <div className="assets-prompts-section">
+              <SmartPrompts project={project} type="suno" />
+            </div>
+
+            {/* File Drop Zone */}
+            <FileDropZone
+              project={project}
+              onFileUpload={(asset) => {
+                const newAsset = { ...asset, addedAt: Date.now() };
+                const updatedAssets = [...(project.assets || []), newAsset];
+                onUpdateProject({ ...project, assets: updatedAssets });
+              }}
+            />
+
             {showAddAsset && (
               <div className="add-asset-form">
                 <input type="text" placeholder="Asset Name" id="asset-name" />
@@ -189,9 +241,9 @@ function ProjectDetailView({ project, onBack, onUpdateProject }) {
               {(project.assets || []).map(asset => (
                 <div key={asset.id} className="asset-card">
                   <div className="asset-preview">
-                    {asset.type === 'image' && <img src={asset.url} alt={asset.name} className="asset-preview-img" loading="lazy" />}
-                    {asset.type === 'video' && <video src={asset.url} controls className="asset-preview-video" />}
-                    {asset.type === 'audio' && <audio src={asset.url} controls className="asset-preview-audio" />}
+                    {asset.type === 'image' && <img src={getSafeUrl(asset.url)} alt={asset.name} className="asset-preview-img" loading="lazy" />}
+                    {asset.type === 'video' && <video src={getSafeUrl(asset.url)} controls className="asset-preview-video" />}
+                    {asset.type === 'audio' && <audio src={getSafeUrl(asset.url)} controls className="asset-preview-audio" />}
                     {asset.type !== 'image' && asset.type !== 'video' && asset.type !== 'audio' && (
                       <div className="asset-icon-large">
                         {asset.type === 'document' && '📄'}
@@ -201,7 +253,7 @@ function ProjectDetailView({ project, onBack, onUpdateProject }) {
                   </div>
                   <div className="asset-info"><div className="asset-name">{asset.name}</div><div className="asset-date">{formatDate(asset.addedAt)}</div></div>
                   <div className="asset-actions">
-                    <button onClick={() => window.open(asset.url, '_blank')}>Variations</button>
+                    <button onClick={() => openExternal(asset.url)}>Öffnen</button>
                     <button onClick={() => handleDeleteAsset(asset.id)}>🗑️</button>
                   </div>
                 </div>
@@ -228,6 +280,20 @@ function ProjectDetailView({ project, onBack, onUpdateProject }) {
             <h3>📝 Project Notes</h3>
             <textarea className="notes-editor" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Notizen zu diesem Projekt..." />
             <button className="btn-save-notes" onClick={handleSaveNotes}>💾 Notizen speichern</button>
+          </div>
+        )}
+        {activeTab === 'prompts' && (
+          <div className="prompts-panel">
+            <h3>✨ AI Prompt Generator</h3>
+            <div className="prompt-type-selector" style={{ marginBottom: '1rem', display: 'flex', gap: '0.5rem' }}>
+              <button className={`btn-filter ${promptType === 'suno' ? 'active' : ''}`} onClick={() => setPromptType('suno')}>🎵 Musik</button>
+              <button className={`btn-filter ${promptType === 'cover' ? 'active' : ''}`} onClick={() => setPromptType('cover')}>🎨 Cover</button>
+              <button className={`btn-filter ${promptType === 'video' ? 'active' : ''}`} onClick={() => setPromptType('video')}>🎬 Video</button>
+              <button className={`btn-filter ${promptType === 'story' ? 'active' : ''}`} onClick={() => setPromptType('story')}>📖 Story</button>
+              <button className={`btn-filter ${promptType === 'youtube' ? 'active' : ''}`} onClick={() => setPromptType('youtube')}>📺 YouTube</button>
+              <button className={`btn-filter ${promptType === 'social' ? 'active' : ''}`} onClick={() => setPromptType('social')}>📱 Social</button>
+            </div>
+            <SmartPrompts project={project} type={promptType} />
           </div>
         )}
         {activeTab === 'links' && (

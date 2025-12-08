@@ -75,9 +75,17 @@ async function createWindow() {
 app.whenReady().then(() => {
     // Register 'media' protocol to serve local files
     protocol.registerFileProtocol('media', (request, callback) => {
-        const url = request.url.replace('media://', '');
+        let url = request.url.replace('media://', '');
+        // Decode URL to handle spaces and special chars
+        url = decodeURIComponent(url);
+
+        // Handle Windows drive letters (e.g., /C:/path -> C:/path)
+        if (process.platform === 'win32' && url.startsWith('/') && url.match(/^\/[a-zA-Z]:/)) {
+            url = url.slice(1);
+        }
+
         try {
-            return callback(decodeURIComponent(url));
+            return callback(url);
         } catch (error) {
             console.error('Failed to register protocol', error);
         }

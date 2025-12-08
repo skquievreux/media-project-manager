@@ -21,6 +21,7 @@ contextBridge.exposeInMainWorld('electron', {
   // File operations for API results
   downloadFile: (url, savePath) => ipcRenderer.invoke('download-file', url, savePath),
   openFile: (filePath) => ipcRenderer.invoke('open-file', filePath),
+  openPath: (path) => ipcRenderer.invoke('open-path', path),
 
   // Check if we're running in Electron
   isElectron: true

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import ToolLinkButtons from './ToolLinkButtons';
+import SmartPrompts from './SmartPrompts';
 import './TaskTracker.css';
 
 /**
@@ -211,6 +212,28 @@ function TaskTracker({ project, onUpdateProject }) {
   const stats = calculateStats();
   const nextTask = getNextTask();
 
+  // Helper for Smart Prompts
+  const getPromptType = (taskId) => {
+    const types = {
+      'song_generated': 'suno',
+      'cover_created': 'cover',
+      'video_rendered': 'video',
+      'story_written': 'story',
+      'youtube_upload': 'youtube',
+      'social_promotion': 'social',
+      'album_cover': 'cover',
+      'tracks_generated': 'suno'
+    };
+
+    // Check for exact match or strict prefix match (task.id contains dynamic suffix)
+    for (const [key, type] of Object.entries(types)) {
+      if (taskId === key || taskId.startsWith(key + '_')) {
+        return type;
+      }
+    }
+    return null;
+  };
+
   return (
     <div className="task-tracker">
       {/* Stats Header */}
@@ -349,6 +372,11 @@ function TaskTracker({ project, onUpdateProject }) {
 
                   {/* Tool Links Integration */}
                   <ToolLinkButtons project={project} task={task} />
+
+                  {/* Smart Prompts Integration */}
+                  {task.status === 'in_progress' && getPromptType(task.id) && (
+                    <SmartPrompts project={project} type={getPromptType(task.id)} />
+                  )}
                 </div>
 
                 <div className="task-actions">
@@ -404,8 +432,10 @@ function TaskTracker({ project, onUpdateProject }) {
                     <button
                       className="btn-action skip"
                       onClick={() => {
-                        const reason = prompt('Grund für Skip (optional):');
-                        if (reason !== null) skipTask(task.id, reason);
+                        // prompt() is often blocked in Electron/Apps, using simple confirm for now
+                        if (confirm('Möchtest du diesen Task wirklich überspringen?')) {
+                          skipTask(task.id, 'Skipped by user');
+                        }
                       }}
                       title="Skip"
                     >

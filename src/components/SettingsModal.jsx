@@ -262,7 +262,7 @@ function SettingsModal({ onClose }) {
               <h3>ℹ️ Über Media Project Manager</h3>
               <div className="about-content">
                 <div className="logo">🎵</div>
-                <h4>Media Project Manager v1.3.1</h4>
+                <h4>Media Project Manager v1.5.0</h4>
                 <p>Komplette Workflow-Lösung für Medien-Produktion</p>
                 <div className="features-list">
                   <div className="feature">✅ Task Tracking mit Timer</div>
