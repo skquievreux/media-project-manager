@@ -462,4 +462,14 @@ ipcMain.handle('open-file', async (event, filePath) => {
     }
 });
 
+ipcMain.handle('open-path', async (event, filePath) => {
+    try {
+        await shell.openPath(filePath);
+        return { success: true };
+    } catch (error) {
+        logError('open-path', error.message);
+        return { error: error.message };
+    }
+});
+
 console.log('✅ All IPC handlers registered successfully');
