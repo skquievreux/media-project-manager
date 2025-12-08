@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import ToolLinkButtons from './ToolLinkButtons';
 import './TaskTracker.css';
 
 /**
@@ -344,6 +345,10 @@ function TaskTracker({ project, onUpdateProject }) {
                       }).join(', ')}
                     </div>
                   )}
+
+
+                  {/* Tool Links Integration */}
+                  <ToolLinkButtons project={project} task={task} />
                 </div>
 
                 <div className="task-actions">
