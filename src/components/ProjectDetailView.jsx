@@ -115,6 +115,16 @@ function ProjectDetailView({ project, onBack, onUpdateProject }) {
     if (project.folder) window.open(`file:///${project.folder}`, '_blank');
   };
 
+  const getSafeUrl = (url) => {
+    if (!url) return '';
+    if (url.startsWith('blob:') || url.startsWith('http')) return url;
+    if (url.startsWith('media://')) return url;
+    if (url.startsWith('file://')) return url.replace('file://', 'media://');
+    // Handle raw Windows paths
+    if (url.match(/^[a-zA-Z]:\\/)) return `media://${url}`;
+    return url;
+  };
+
   const circleLength = 2 * Math.PI * 52;
   const progressOffset = circleLength * (1 - stats.progress / 100);
 
@@ -209,9 +219,9 @@ function ProjectDetailView({ project, onBack, onUpdateProject }) {
               {(project.assets || []).map(asset => (
                 <div key={asset.id} className="asset-card">
                   <div className="asset-preview">
-                    {asset.type === 'image' && <img src={asset.url} alt={asset.name} className="asset-preview-img" loading="lazy" />}
-                    {asset.type === 'video' && <video src={asset.url} controls className="asset-preview-video" />}
-                    {asset.type === 'audio' && <audio src={asset.url} controls className="asset-preview-audio" />}
+                    {asset.type === 'image' && <img src={getSafeUrl(asset.url)} alt={asset.name} className="asset-preview-img" loading="lazy" />}
+                    {asset.type === 'video' && <video src={getSafeUrl(asset.url)} controls className="asset-preview-video" />}
+                    {asset.type === 'audio' && <audio src={getSafeUrl(asset.url)} controls className="asset-preview-audio" />}
                     {asset.type !== 'image' && asset.type !== 'video' && asset.type !== 'audio' && (
                       <div className="asset-icon-large">
                         {asset.type === 'document' && '📄'}
