@@ -1,4 +1,4 @@
-const { contextBridge, ipcRenderer } = require('electron');
+const { contextBridge, ipcRenderer, webUtils } = require('electron');
 
 // Expose protected methods that allow the renderer process to use
 // ipcRenderer without exposing the entire object
@@ -23,6 +23,12 @@ contextBridge.exposeInMainWorld('electron', {
   openFile: (filePath) => ipcRenderer.invoke('open-file', filePath),
   openPath: (path) => ipcRenderer.invoke('open-path', path),
 
+  // File Utils (Required for File object path access in Renderer)
+  getPathForFile: (file) => webUtils.getPathForFile(file),
+
   // Check if we're running in Electron
-  isElectron: true
+  isElectron: true,
+
+  // Generic IPC invoke for flexible extensions
+  invoke: (channel, ...args) => ipcRenderer.invoke(channel, ...args)
 });

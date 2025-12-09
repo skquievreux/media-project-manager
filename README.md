@@ -1,6 +1,6 @@
 # Media Project Manager (MPM)
 
-![Version](https://img.shields.io/badge/version-1.5.2-blue.svg)
+![Version](https://img.shields.io/badge/version-1.5.3-blue.svg)
 ![Electron](https://img.shields.io/badge/Electron-Desktop-orange.svg)
 ![Feature](https://img.shields.io/badge/feature-Audio_Visualizer-purple.svg)
 ![Language](https://img.shields.io/badge/language-Deutsch-red.svg)

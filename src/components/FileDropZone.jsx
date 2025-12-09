@@ -15,12 +15,19 @@ import './FileDropZone.css';
  *
  * Built by Claude for Don Key
  */
-function FileDropZone({ project, task, onFileUpload, onTaskComplete }) {
+/**
+ * FileDropZone Component
+ * Drag & drop file upload with auto-task completion
+ *
+ * Modified to support "onFilesDetected" for Smart Interception
+ */
+function FileDropZone({ project, task, onFileUpload, onTaskComplete, onFilesDetected }) {
   const [isDragging, setIsDragging] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef(null);
 
+  // ... (detectFileType, getFileIcon unchanged)
   // Detect file type
   const detectFileType = (file) => {
     const ext = file.name.split('.').pop().toLowerCase();
@@ -88,10 +95,19 @@ function FileDropZone({ project, task, onFileUpload, onTaskComplete }) {
   const processFiles = async (files) => {
     if (files.length === 0) return;
 
+    // INTELLIGENT WORKFLOW INTERCEPT
+    // If parent provided onFilesDetected, we pass raw files there (e.g. for AssetImportDialog)
+    // and skip the legacy "simple upload" logic.
+    if (onFilesDetected) {
+      onFilesDetected(files);
+      return;
+    }
+
     setUploading(true);
     setUploadProgress(0);
 
     for (let i = 0; i < files.length; i++) {
+      // ... legacy logic continues ...
       const file = files[i];
       const fileType = detectFileType(file);
 

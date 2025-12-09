@@ -1,6 +1,26 @@
 {
     "versions": [
         {
+            "version": "1.5.3",
+            "date": "2025-12-09",
+            "type": "patch",
+            "title": "Smart Import & Workflow Fixes",
+            "changes": [
+                {
+                    "type": "fix",
+                    "text": "Import: Magic Path Creation erstellt automatisch Ordner für neue Projekte."
+                },
+                {
+                    "type": "fix",
+                    "text": "Electron: Security Fix für Dateipfade (getPathForFile)."
+                },
+                {
+                    "type": "feature",
+                    "text": "Naming: Smart Acronym, Track-Nummern und Tags im Import-Dialog."
+                }
+            ]
+        },
+        {
             "version": "1.5.2",
             "date": "2025-12-09",
             "type": "patch",

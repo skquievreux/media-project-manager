@@ -4,6 +4,7 @@ import TaskTracker from './TaskTracker';
 import FileDropZone from './FileDropZone';
 import SmartPrompts from './SmartPrompts';
 import AudioVisualizer from './AudioVisualizer';
+import AssetImportDialog from './AssetImportDialog';
 import './ProjectDetailView.css';
 
 function ProjectDetailView({ project, onBack, onUpdateProject }) {
@@ -14,6 +15,7 @@ function ProjectDetailView({ project, onBack, onUpdateProject }) {
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [titleInput, setTitleInput] = useState('');
   const [activeMediaId, setActiveMediaId] = useState(null);
+  const [importQueue, setImportQueue] = useState([]);
 
   // Debug log to ensure HMR update
   console.log('Rendering ProjectDetailView', { projectId: project.id, isEditingTitle });
@@ -171,6 +173,96 @@ function ProjectDetailView({ project, onBack, onUpdateProject }) {
     return clean;
   };
 
+  const handleImportSave = async (processedData) => {
+    let sourcePath = processedData.originalFile.path;
+    // Electron context isolation might strip .path, try to recover it
+    if (!sourcePath && window.electron && window.electron.getPathForFile) {
+      try {
+        sourcePath = window.electron.getPathForFile(processedData.originalFile);
+      } catch (e) {
+        console.error("Failed to get path via webUtils", e);
+      }
+    }
+    let currentProjectPath = project.path;
+
+    // Ensure we have project path
+    if (!currentProjectPath) {
+      // MAGIC WORKFLOW: Auto-create project path if missing (e.g. Downloads/MediaProjects/Name)
+      try {
+        // Get standard base path (Downloads/MediaProjects) via Electron
+        const standard = await window.electron.invoke('get-standard-path');
+        if (standard && standard.path) {
+          // Sanitize project name for folder usage
+          const safeProjectName = project.name.replace(/[^a-zA-Z0-9_\- ]/g, '').trim();
+
+          // Construct standard path using forward slashes for internal consistency
+          const base = standard.path.replace(/\\/g, '/');
+          currentProjectPath = `${base}/${safeProjectName}`;
+
+          // Update project state immediately.
+          // The actual folder is created either here or recursively during the first file copy.
+          // Since this is key info, we assume it succeeds.
+          onUpdateProject({ ...project, path: currentProjectPath, folder: currentProjectPath });
+        } else {
+          alert("Fehler: Konnte Standard-Pfad nicht ermitteln.");
+          return;
+        }
+      } catch (err) {
+        console.error("Auto-Path creation failed", err);
+        return;
+      }
+    }
+
+    // Destination folder construction
+    const cleanProjectPath = currentProjectPath.replace(/\\/g, '/');
+    const destinationFolder = `${cleanProjectPath}/${processedData.folder}`;
+
+    try {
+      if (window.electron) {
+        const result = await window.electron.invoke('import-file', {
+          sourcePath,
+          destinationFolder,
+          newFilename: processedData.newFilename
+        });
+
+        if (result.success) {
+          const newAsset = {
+            id: Date.now(),
+            name: result.name,
+            url: 'media:///' + result.path.replace(/\\/g, '/'),
+            size: result.size,
+            addedAt: Date.now()
+          };
+
+          // Map category to type
+          if (processedData.category === 'audio') newAsset.type = 'audio';
+          else if (processedData.category === 'images') newAsset.type = 'image';
+          else if (processedData.category === 'docs') newAsset.type = 'document';
+          else newAsset.type = 'other';
+
+          const updatedAssets = [...(project.assets || []), newAsset];
+
+          const updatedProject = {
+            ...project,
+            path: currentProjectPath,
+            folder: currentProjectPath,
+            assets: updatedAssets
+          };
+
+          onUpdateProject(updatedProject);
+
+          // Remove processed file from queue
+          setImportQueue(files => files.filter(f => f !== processedData.originalFile));
+        } else {
+          alert(`Importfehler: ${result.error}`);
+        }
+      }
+    } catch (e) {
+      console.error("Import Exception:", e);
+      alert("Fehler beim Importieren.");
+    }
+  };
+
   const circleLength = 2 * Math.PI * 52;
   const progressOffset = circleLength * (1 - stats.progress / 100);
 
@@ -300,8 +392,10 @@ function ProjectDetailView({ project, onBack, onUpdateProject }) {
             </div>
 
             {/* File Drop Zone */}
+            {/* File Drop Zone with Smart Interception */}
             <FileDropZone
               project={project}
+              onFilesDetected={(files) => setImportQueue(Array.from(files))}
               onFileUpload={(asset) => {
                 const newAsset = { ...asset, addedAt: Date.now() };
                 const updatedAssets = [...(project.assets || []), newAsset];
@@ -323,6 +417,16 @@ function ProjectDetailView({ project, onBack, onUpdateProject }) {
                 <button onClick={() => { const name = document.getElementById('asset-name').value; const url = document.getElementById('asset-url').value; const type = document.getElementById('asset-type').value; if (name && url) handleAddAsset(url, name, type); }}>Speichern</button>
                 <button onClick={() => setShowAddAsset(false)}>Abbrechen</button>
               </div>
+            )}
+
+            {/* Import Dialog Overlay */}
+            {importQueue.length > 0 && (
+              <AssetImportDialog
+                files={importQueue}
+                project={project}
+                onSave={handleImportSave}
+                onCancel={() => setImportQueue([])}
+              />
             )}
             <div className="assets-grid">
               {(project.assets || []).map(asset => (

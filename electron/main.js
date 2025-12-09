@@ -16,6 +16,10 @@ const __dirname = path.dirname(__filename);
 
 let mainWindow;
 
+// Silence annoying Autofill errors in DevTools/Console
+app.commandLine.appendSwitch('disable-features', 'AutofillAddressEnabled,AutofillCreditCardEnabled,AutofillPasswordManagerEnabled');
+
+
 // Error Logging
 const logPath = path.join(app.getPath('userData'), 'error.log');
 
@@ -209,6 +213,34 @@ ipcMain.handle('scan-projects', async (event) => {
     }
 });
 
+// Utility: Select Directory
+ipcMain.handle('select-directory', async () => {
+    const result = await dialog.showOpenDialog(mainWindow, {
+        properties: ['openDirectory'],
+        title: 'Projektordner auswählen'
+    });
+    if (result.canceled || result.filePaths.length === 0) {
+        return { canceled: true };
+    }
+    return { path: result.filePaths[0] };
+});
+
+// Utility: Get Auto-Save Project Root (Magic Workflow)
+ipcMain.handle('get-standard-path', async () => {
+    // Default to Downloads/MediaProjects as requested by user workflow
+    const downloadsPath = app.getPath('downloads');
+    const standardPath = path.join(downloadsPath, 'MediaProjects');
+
+    // Ensure it exists
+    try {
+        await fs.promises.mkdir(standardPath, { recursive: true });
+    } catch (e) {
+        console.error("Could not create standard path", e);
+    }
+
+    return { path: standardPath };
+});
+
 // IPC Handler for Manual Folder Selection
 ipcMain.handle('select-scan-folder', async () => {
     const result = await dialog.showOpenDialog(mainWindow, {
@@ -313,6 +345,32 @@ ipcMain.handle('scan-project-resources', async (event, projectPath) => {
     } catch (error) {
         logError(`scan-project-resources:${projectPath}`, error.message);
         return { error: error.message };
+    }
+});
+
+// IPC Handler for Intelligent File Import
+ipcMain.handle('import-file', async (event, { sourcePath, destinationFolder, newFilename }) => {
+    try {
+        const destPath = path.join(destinationFolder, newFilename);
+
+        // Ensure destination folder exists
+        await fs.promises.mkdir(destinationFolder, { recursive: true });
+
+        // Copy file (safer than move across drives)
+        // If exact file exists, it will be overwritten or error? copyFile default overwrites.
+        await fs.promises.copyFile(sourcePath, destPath);
+
+        const stats = await fs.promises.stat(destPath);
+
+        return {
+            success: true,
+            path: destPath,
+            size: stats.size,
+            name: newFilename
+        };
+    } catch (error) {
+        console.error('Import file failed:', error);
+        return { success: false, error: error.message };
     }
 });
 
