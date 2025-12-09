@@ -1,8 +1,8 @@
 # Media Project Manager (MPM)
 
-![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)
+![Version](https://img.shields.io/badge/version-1.5.2-blue.svg)
 ![Electron](https://img.shields.io/badge/Electron-Desktop-orange.svg)
-![Status](https://img.shields.io/badge/status-Active-success.svg)
+![Feature](https://img.shields.io/badge/feature-Audio_Visualizer-purple.svg)
 ![Language](https://img.shields.io/badge/language-Deutsch-red.svg)
 
 ## 📄 Über das Projekt
@@ -14,22 +14,27 @@ Das Ziel der Anwendung ist es, die Lücke zwischen Dateisystem (Explorer/Finder)
 ### 🎯 Kernprobleme, die wir lösen
 *   **Verlorene Übersicht:** Bei hunderten von Projektordnern geht der Überblick über den Status schnell verloren.
 *   **Medien-Chaos:** Assets (Bilder, Videos) liegen verstreut in Unterordnern.
-*   **Manuelle Prozesse:** Das Zählen von Tracks oder das Prüfen auf Vollständigkeit (Konzept, Umsetzung) ist zeitaufwendig.
+*   **Manuelle Prozesse:** Das Zählen von Tracks oder das Prüfen auf Vorhandensein notwendiger Schritte kostet Zeit.
 
-## 🚀 Hauptfunktionen (v1.1.0)
+## 🚀 Hauptfunktionen (v1.5.2)
 
-### 1. Intelligente Projekt-Erkennung
-Die App arbeitet nahtlos mit Ihrer bestehenden Ordnerstruktur zusammen. Sie erkennt Projekte basierend auf Namenskonventionen (`Typ-Name`, z.B. `Album-SommerHits`) und analysiert automatisch den Inhalt:
-*   **Alben:** Zählt automatisch `TRACK_XX` Ordner.
-*   **Struktur-Check:** Prüft auf Vorhandensein von Standard-Ordnern (`ANFORDERUNGEN`, `KONZEPT`, `UMSETZUNG`, `DOKUMENTATION`).
+### 1. 🪄 Smart Templates & Workflows
+Starten Sie neue Projekte blitzschnell mit vordefinierten Schablonen für verschiedene Medientypen (Single Song, Album, Kinderbuch, Werbespot). Jedes Template enthält automatisch alle notwendigen Tasks und Milestones.
 
-### 2. Desktop-Integration
+### 2. 📋 Advanced Task-Tracking
+Verwalten Sie Ihre Aufgaben präzise:
+*   **Bearbeiten:** Passen Sie Aufgabennamen und geschätzte Zeiten direkt an.
+*   **Zeit-Tracking:** Erfassen Sie die tatsächliche Arbeitszeit.
+*   **Flexibilität:** Starten Sie abgeschlossene Aufgaben neu oder überspringen Sie unnötige Schritte.
+*   **Integration:** Quick-Links zu Tools wie Suno, Transkriptor oder Canva direkt in der Aufgabe.
+
+### 3. Intelligente Projekt-Erkennung
+Die App arbeitet nahtlos mit Ihrer bestehenden Ordnerstruktur zusammen. Sie erkennt Projekte basierend auf Namenskonventionen (`Typ-Name`, z.B. `Album-SommerHits`) und analysiert automatisch den Inhalt.
+
+### 4. Desktop-Integration & Ressourcen
 *   **Lokaler Zugriff:** Basiert auf Electron für direkten, performanten Zugriff auf die Festplatte.
-*   **Drag & Drop:** (Geplant) Einfaches Importieren von Dateien.
-*   **Persistenz:** Alle Metadaten werden lokal in einer JSON-Datenbank gespeichert, sodass keine Cloud-Verbindung zwingend erforderlich ist.
-
-### 3. Ressourcen-Management
-Beim Import eines Projekts werden automatisch alle relevanten Mediendateien (JPG, PNG, MP4, MOV, MP3, WAV, PDF) indiziert und im Dashboard visualisiert.
+*   **Asset-Scan:** Automatische Indizierung von Medien (JPG, MP3, MP4) im Projektordner.
+*   **Inline-Editing:** Bearbeiten Sie Projektdetails direkt in der Oberfläche.
 
 ## 🛠️ Technischer Stack
 

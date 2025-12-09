@@ -1,12 +1,17 @@
 import { SearchIcon, PlusIcon, SettingsIcon } from './Icons';
 import './Header.css';
 
-const Header = ({ onNewProject, onSearch, onSettings }) => {
+const Header = ({ onNewProject, onSearch, onSettings, onLogoClick }) => {
     return (
         <header className="header glass-strong">
             <div className="header-content">
                 <div className="header-left">
-                    <div className="logo">
+                    <div
+                        className="logo"
+                        onClick={() => onLogoClick && onLogoClick()}
+                        style={{ cursor: 'pointer' }}
+                        title="Zum Dashboard"
+                    >
                         <div className="logo-icon">
                             <span className="text-gradient">▶</span>
                         </div>

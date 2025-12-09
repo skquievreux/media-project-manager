@@ -66,18 +66,53 @@ function App() {
 
   // Create new project (or import)
   const handleNewProject = async (projectData) => {
+    // If called from a click event or without data, show templates view
+    if (!projectData || projectData.nativeEvent) {
+      setCurrentView('templates');
+      return;
+    }
+
     if (projectData) {
-      // Check for duplicates based on path or name
-      const exists = projects.some(p => p.path === projectData.path || p.name === projectData.name);
-      if (exists) {
-        alert('Dieses Projekt wurde bereits importiert.');
-        return;
+      // Check for duplicates
+      // Case 1: Import existing project (has path)
+      if (projectData.path) {
+        const exists = projects.some(p => p.path === projectData.path);
+        if (exists) {
+          alert('Dieses Projekt wurde bereits importiert.');
+          return;
+        }
       }
 
-      // Import existing project
+      // Prepare new project
       let newProject = { ...projectData };
 
-      // Scan for resources if running in Electron
+      // Case 2: New Project from Template (no path yet) - Ensure unique name
+      if (!projectData.path) {
+        let uniqueName = newProject.name;
+        let counter = 1;
+        while (projects.some(p => p.name === uniqueName)) {
+          uniqueName = `${newProject.name} (${counter})`;
+          counter++;
+        }
+        newProject.name = uniqueName;
+      }
+
+      // Ensure basic fields exist if coming from simple template selection
+      if (!newProject.id) newProject.id = Date.now();
+      if (!newProject.status) newProject.status = 'planning';
+      if (!newProject.progress) newProject.progress = 0;
+      if (!newProject.createdAt) newProject.createdAt = new Date().toISOString().split('T')[0];
+      if (!newProject.starred) newProject.starred = false;
+      if (!newProject.assets) newProject.assets = [];
+      if (!newProject.notes) newProject.notes = '';
+
+      // Add default tasks if not present (although TemplatesView provides title/type, it might not provide full tasks structure yet? 
+      // Actually TemplatesView only provides { type, name }. We need to populate tasks here.)
+      if (!newProject.tasks && newProject.type) {
+        newProject.tasks = getDefaultTasks(newProject.type);
+      }
+
+      // Scan for resources if running in Electron and path is provided
       if (window.electron && projectData.path) {
         try {
           const result = await window.electron.scanProjectResources(projectData.path);
@@ -91,33 +126,6 @@ function App() {
       }
 
       setProjects(prev => [newProject, ...prev]);
-      setActiveProject(newProject);
-    } else {
-      // Create new random project (legacy/demo mode)
-      const projectTypes = ['video', 'audio', 'image', 'document'];
-      const statuses = ['planning', 'in-progress', 'completed'];
-
-      // If projectData provides type, use it
-      const type = projectData?.type || projectTypes[Math.floor(Math.random() * projectTypes.length)];
-      const randomStatus = statuses[Math.floor(Math.random() * statuses.length)];
-
-      const defaultTasks = getDefaultTasks(type);
-
-      const newProject = {
-        id: Date.now(),
-        name: projectData?.name || `Neues ${type.charAt(0).toUpperCase() + type.slice(1)} Projekt`,
-        description: 'Klicken zum Bearbeiten der Beschreibung und Details',
-        type: type,
-        status: randomStatus,
-        progress: 0,
-        createdAt: new Date().toISOString().split('T')[0],
-        starred: false,
-        assets: [],
-        notes: '',
-        tasks: defaultTasks
-      };
-
-      setProjects([newProject, ...projects]);
       setActiveProject(newProject);
       setCurrentView('project');
     }
@@ -139,9 +147,12 @@ function App() {
   // Delete project
   const handleDeleteProject = (projectId) => {
     if (confirm('Möchtest du dieses Projekt wirklich löschen?')) {
-      setProjects(projects.filter(p => p.id !== projectId));
+      const newProjects = projects.filter(p => p.id !== projectId);
+      setProjects(newProjects);
+
       if (activeProject?.id === projectId) {
         setActiveProject(null);
+        setCurrentView('dashboard');
       }
     }
   };
@@ -197,12 +208,18 @@ function App() {
     setSearchQuery(query);
   };
 
+  const handleLogoClick = () => {
+    setActiveProject(null);
+    setCurrentView('dashboard');
+  };
+
   return (
     <div className="app">
       <Header
         onNewProject={handleNewProject}
         onSearch={handleSearch}
         onSettings={() => setShowSettings(true)}
+        onLogoClick={handleLogoClick}
       />
 
       <div className="app-body">

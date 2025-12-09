@@ -81,6 +81,7 @@
     opacity: 0;
     transform: translateY(-10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -145,9 +146,12 @@
 }
 
 @keyframes pulse {
-  0%, 100% {
+
+  0%,
+  100% {
     box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4);
   }
+
   50% {
     box-shadow: 0 0 20px 5px rgba(59, 130, 246, 0.2);
   }
@@ -213,9 +217,12 @@
 }
 
 @keyframes activeGlow {
-  0%, 100% {
+
+  0%,
+  100% {
     box-shadow: 0 0 10px rgba(59, 130, 246, 0.3);
   }
+
   50% {
     box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
   }
@@ -261,6 +268,7 @@
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  width: 100%;
 }
 
 .task-header {
@@ -379,6 +387,7 @@
 
 .btn-action.start {
   background: #3b82f6;
+  color: white;
 }
 
 .btn-action.start:hover {
@@ -387,6 +396,7 @@
 
 .btn-action.pause {
   background: #f59e0b;
+  color: white;
 }
 
 .btn-action.pause:hover {
@@ -395,6 +405,7 @@
 
 .btn-action.complete {
   background: #10b981;
+  color: white;
 }
 
 .btn-action.complete:hover {
@@ -403,10 +414,112 @@
 
 .btn-action.skip {
   background: #64748b;
+  color: white;
 }
 
 .btn-action.skip:hover {
   background: #475569;
+}
+
+/* Editing Mode */
+.task-item.editing {
+  background: #334155;
+  border-left-color: #3b82f6;
+}
+
+.edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+}
+
+.edit-input {
+  width: 100%;
+  padding: 0.5rem;
+  background: #1e293b;
+  border: 1px solid #475569;
+  border-radius: 4px;
+  color: #e2e8f0;
+  font-size: 1rem;
+}
+
+.edit-row {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.edit-row label {
+  color: #94a3b8;
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.edit-input-small {
+  width: 80px;
+  padding: 0.5rem;
+  background: #1e293b;
+  border: 1px solid #475569;
+  border-radius: 4px;
+  color: #e2e8f0;
+}
+
+.edit-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+.btn-save {
+  background: #10b981;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.btn-save:hover {
+  background: #059669;
+}
+
+.btn-cancel {
+  background: #ef4444;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.btn-cancel:hover {
+  background: #dc2626;
+}
+
+/* New Action Buttons */
+.btn-action.edit {
+  background: #6366f1;
+  /* Indigo */
+  color: white;
+}
+
+.btn-action.edit:hover {
+  background: #4f46e5;
+}
+
+.btn-action.restart {
+  background: #f97316;
+  /* Orange */
+  color: white;
+}
+
+.btn-action.restart:hover {
+  background: #ea580c;
 }
 
 /* Empty State */

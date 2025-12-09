@@ -3,13 +3,20 @@ import { PROJECT_TYPES } from '../constants/projectTypes';
 import TaskTracker from './TaskTracker';
 import FileDropZone from './FileDropZone';
 import SmartPrompts from './SmartPrompts';
+import AudioVisualizer from './AudioVisualizer';
 import './ProjectDetailView.css';
 
 function ProjectDetailView({ project, onBack, onUpdateProject }) {
   const [activeTab, setActiveTab] = useState('tasks');
   const [notes, setNotes] = useState(project.notes || '');
   const [showAddAsset, setShowAddAsset] = useState(false);
-  const [promptType, setPromptType] = useState('suno'); // State for the new tab selector
+  const [promptType, setPromptType] = useState('suno');
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [titleInput, setTitleInput] = useState('');
+  const [activeMediaId, setActiveMediaId] = useState(null);
+
+  // Debug log to ensure HMR update
+  console.log('Rendering ProjectDetailView', { projectId: project.id, isEditingTitle });
 
   const projectType = PROJECT_TYPES[project.projectType] || PROJECT_TYPES[project.type] || {};
   const stats = calculateProjectStats();
@@ -104,6 +111,12 @@ function ProjectDetailView({ project, onBack, onUpdateProject }) {
     return `${minutes}min`;
   };
 
+  const formatFileSize = (bytes) => {
+    if (!bytes) return '';
+    const mb = bytes / (1024 * 1024);
+    return `${mb.toFixed(2)} MB`;
+  };
+
   const handleSaveNotes = () => {
     onUpdateProject({ ...project, notes });
   };
@@ -129,22 +142,33 @@ function ProjectDetailView({ project, onBack, onUpdateProject }) {
   const getSafeUrl = (url) => {
     if (!url) return '';
     if (url.startsWith('blob:') || url.startsWith('http')) return url;
-    if (url.startsWith('media://')) return url;
 
-    // Windows path handling (drive letter)
-    if (url.match(/^[a-zA-Z]:/)) {
-      // Ensure forward slashes and prepend media://
-      return `media://${url.replace(/\\/g, '/')}`;
+    // Normalize string to use forward slashes (fixes Windows backslash issues in src attributes)
+    let clean = url.replace(/\\/g, '/');
+
+    // Already has protocol? Safe to return unless it needs fixing?
+    if (clean.startsWith('media://')) {
+      // Ensure we don't have broken slashes if needed, usually media://C:/ is fine if backend handles it
+      // Check if we need to ensure triple slash for standard compliance if normalization fails
+      return clean;
     }
 
-    // Unix/Mac path handling (leading slash)
-    if (url.startsWith('/') && !url.startsWith('//')) {
-      return `media://${url}`;
+    if (clean.startsWith('file://')) {
+      return clean.replace('file://', 'media://');
     }
 
-    if (url.startsWith('file://')) return url.replace('file://', 'media://');
+    // Windows drive path (C:/...) -> media://C:/...
+    // Some browsers prefer media:///C:/... for local scheme, lets be safe with standard protocol format
+    if (clean.match(/^[a-zA-Z]:/)) {
+      return `media:///${clean}`;
+    }
 
-    return url;
+    // Unix path
+    if (clean.startsWith('/') && !clean.startsWith('//')) {
+      return `media://${clean}`;
+    }
+
+    return clean;
   };
 
   const circleLength = 2 * Math.PI * 52;
@@ -155,7 +179,23 @@ function ProjectDetailView({ project, onBack, onUpdateProject }) {
       <div className="detail-header">
         <button className="btn-back" onClick={onBack}>← Zurück</button>
         <div className="header-actions">
-          <button className="btn-secondary" onClick={() => onUpdateProject({ ...project, tasks: [...(project.tasks || []), ...(projectType.defaultTasks?.filter(t => !project.tasks?.some(pt => pt.label === t.label)) || [])] })}>
+          <button className="btn-secondary" onClick={() => {
+            const defaultTasks = projectType.defaultTasks || [];
+            const existingLabels = new Set((project.tasks || []).map(t => t.label));
+            const newTasks = defaultTasks.filter(t => !existingLabels.has(t.label));
+
+            if (newTasks.length === 0) {
+              alert('Alle Standard-Tasks für dieses Template sind bereits vorhanden.');
+              return;
+            }
+
+            if (window.confirm(`${newTasks.length} neue Tasks aus dem Template hinzufügen?`)) {
+              onUpdateProject({
+                ...project,
+                tasks: [...(project.tasks || []), ...newTasks]
+              });
+            }
+          }}>
             🪄 Smart Template anwenden
           </button>
           <button className="btn-folder" onClick={openFolder} disabled={!project.folder}>📁 Ordner öffnen</button>
@@ -165,7 +205,54 @@ function ProjectDetailView({ project, onBack, onUpdateProject }) {
       <div className="hero-section" style={{ '--type-color': projectType.color || '#3b82f6' }}>
         <div className="hero-icon">{projectType.icon || '📦'}</div>
         <div className="hero-content">
-          <h1 className="project-title">{project.name}</h1>
+          {isEditingTitle ? (
+            <input
+              type="text"
+              value={titleInput}
+              onChange={(e) => setTitleInput(e.target.value)}
+              onBlur={() => {
+                if (titleInput.trim() !== project.name) {
+                  onUpdateProject({ ...project, name: titleInput.trim() });
+                }
+                setIsEditingTitle(false);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  if (titleInput.trim() !== project.name) {
+                    onUpdateProject({ ...project, name: titleInput.trim() });
+                  }
+                  setIsEditingTitle(false);
+                } else if (e.key === 'Escape') {
+                  setIsEditingTitle(false);
+                }
+              }}
+              autoFocus
+              className="project-title-input"
+              style={{
+                fontSize: '2rem',
+                fontWeight: 'bold',
+                background: 'transparent',
+                border: 'none',
+                borderBottom: '2px solid var(--type-color, #3b82f6)',
+                color: 'white',
+                width: '100%',
+                marginBottom: '0.5rem',
+                outline: 'none'
+              }}
+            />
+          ) : (
+            <h1
+              className="project-title"
+              onClick={() => {
+                setTitleInput(project.name);
+                setIsEditingTitle(true);
+              }}
+              title="Klicken zum Bearbeiten"
+              style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+            >
+              {project.name} <span style={{ fontSize: '0.5em', opacity: 0.5 }}>✏️</span>
+            </h1>
+          )}
           <div className="project-meta">
             <span className="meta-item">{projectType.label || project.type}</span>
             <span className="meta-item">Erstellt: {formatDate(project.createdAt)}</span>
@@ -239,11 +326,25 @@ function ProjectDetailView({ project, onBack, onUpdateProject }) {
             )}
             <div className="assets-grid">
               {(project.assets || []).map(asset => (
-                <div key={asset.id} className="asset-card">
+                <div key={asset.id} className={`asset-card ${activeMediaId === asset.id ? 'active' : ''}`}>
                   <div className="asset-preview">
                     {asset.type === 'image' && <img src={getSafeUrl(asset.url)} alt={asset.name} className="asset-preview-img" loading="lazy" />}
-                    {asset.type === 'video' && <video src={getSafeUrl(asset.url)} controls className="asset-preview-video" />}
-                    {asset.type === 'audio' && <audio src={getSafeUrl(asset.url)} controls className="asset-preview-audio" />}
+                    {asset.type === 'video' && (
+                      <video
+                        src={getSafeUrl(asset.url)}
+                        controls
+                        className="asset-preview-video"
+                        onPlay={() => setActiveMediaId(asset.id)}
+                      />
+                    )}
+                    {asset.type === 'audio' && (
+                      <div className="asset-preview-visualizer">
+                        <AudioVisualizer
+                          src={getSafeUrl(asset.url)}
+                          onPlay={() => setActiveMediaId(asset.id)}
+                        />
+                      </div>
+                    )}
                     {asset.type !== 'image' && asset.type !== 'video' && asset.type !== 'audio' && (
                       <div className="asset-icon-large">
                         {asset.type === 'document' && '📄'}
@@ -251,7 +352,13 @@ function ProjectDetailView({ project, onBack, onUpdateProject }) {
                       </div>
                     )}
                   </div>
-                  <div className="asset-info"><div className="asset-name">{asset.name}</div><div className="asset-date">{formatDate(asset.addedAt)}</div></div>
+                  <div className="asset-info">
+                    <div className="asset-name" title={asset.name}>{asset.name}</div>
+                    <div className="asset-meta">
+                      <span className="asset-date">{formatDate(asset.addedAt)}</span>
+                      {asset.size && <span className="asset-size">{formatFileSize(asset.size)}</span>}
+                    </div>
+                  </div>
                   <div className="asset-actions">
                     <button onClick={() => openExternal(asset.url)}>Öffnen</button>
                     <button onClick={() => handleDeleteAsset(asset.id)}>🗑️</button>
@@ -307,6 +414,7 @@ function ProjectDetailView({ project, onBack, onUpdateProject }) {
               <a href="https://artify.unlock-your-song.de/" target="_blank" rel="noopener noreferrer" className="link-card"><span className="link-icon">🖼️</span><span className="link-label">Artify</span></a>
               <a href="https://artists.spotify.com/c/de/artist/0hyYhfUiuBwBbPQZdM8D2d/home" target="_blank" rel="noopener noreferrer" className="link-card"><span className="link-icon">📊</span><span className="link-label">Spotify Artists</span></a>
               <a href="https://sendfox.com/dashboard/emails" target="_blank" rel="noopener noreferrer" className="link-card"><span className="link-icon">📧</span><span className="link-label">Sendfox</span></a>
+              <a href="https://transkriptor.runitfast.xyz/" target="_blank" rel="noopener noreferrer" className="link-card"><span className="link-icon">📝</span><span className="link-label">Transkriptor</span></a>
             </div>
           </div>
         )}

@@ -1,8 +1,22 @@
-import { HomeIcon, FolderIcon, FilterIcon, PlusIcon, GridIcon } from './Icons';
+import { useState } from 'react';
+import { HomeIcon, FolderIcon, FilterIcon, PlusIcon, GridIcon, ChevronDownIcon, ChevronUpIcon } from './Icons';
+import { PROJECT_TYPES } from '../constants/projectTypes';
 import './Sidebar.css';
 
 const Sidebar = ({ projects, activeProject, currentView, onSelectProject, onNavigate, onNewProject, filter, onFilterChange }) => {
-    const projectTypes = ['all', 'video', 'audio', 'image', 'document'];
+    const [showAllFilters, setShowAllFilters] = useState(false);
+
+    // Get all available types from constants + 'all'
+    const allTypes = ['all', ...Object.keys(PROJECT_TYPES)];
+
+    // Determine which types to show
+    // Always show 'all' (index 0) + next 3 items by default
+    const visibleTypes = showAllFilters ? allTypes : allTypes.slice(0, 4);
+
+    const getLabel = (type) => {
+        if (type === 'all') return 'Alle';
+        return PROJECT_TYPES[type]?.label || type.charAt(0).toUpperCase() + type.slice(1);
+    };
 
     return (
         <aside className="sidebar glass">
@@ -29,15 +43,32 @@ const Sidebar = ({ projects, activeProject, currentView, onSelectProject, onNavi
                         <h3>Filter</h3>
                     </div>
                     <div className="filter-buttons">
-                        {projectTypes.map(type => (
+                        {visibleTypes.map(type => (
                             <button
                                 key={type}
                                 className={`filter-btn ${filter === type ? 'active' : ''}`}
                                 onClick={() => onFilterChange(type)}
                             >
-                                {type === 'all' ? 'Alle' : type.charAt(0).toUpperCase() + type.slice(1)}
+                                {getLabel(type)}
                             </button>
                         ))}
+
+                        {allTypes.length > 4 && (
+                            <button
+                                className="filter-toggle-btn"
+                                onClick={() => setShowAllFilters(!showAllFilters)}
+                            >
+                                {showAllFilters ? (
+                                    <>
+                                        <ChevronUpIcon size={14} /> Weniger anzeigen
+                                    </>
+                                ) : (
+                                    <>
+                                        <ChevronDownIcon size={14} /> Mehr anzeigen
+                                    </>
+                                )}
+                            </button>
+                        )}
                     </div>
                 </div>
 
