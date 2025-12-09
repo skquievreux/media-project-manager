@@ -1,3 +1,11 @@
+## [1.6.1](https://github.com/skquievreux/media-project-manager/compare/v1.6.0...v1.6.1) (2025-12-09)
+
+
+### Bug Fixes
+
+* normalize asset urls for media protocol playback ([79777fa](https://github.com/skquievreux/media-project-manager/commit/79777fa08054f2719784496b5b13fe32b78d9572))
+* register missing open-path IPC handler in main.js ([295f79c](https://github.com/skquievreux/media-project-manager/commit/295f79c28049f041cf24daac97fabfb0ba43fcfd))
+
 # [1.6.0](https://github.com/skquievreux/media-project-manager/compare/v1.5.2...v1.6.0) (2025-12-08)
 
 
