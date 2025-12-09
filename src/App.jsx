@@ -208,12 +208,18 @@ function App() {
     setSearchQuery(query);
   };
 
+  const handleLogoClick = () => {
+    setActiveProject(null);
+    setCurrentView('dashboard');
+  };
+
   return (
     <div className="app">
       <Header
         onNewProject={handleNewProject}
         onSearch={handleSearch}
         onSettings={() => setShowSettings(true)}
+        onLogoClick={handleLogoClick}
       />
 
       <div className="app-body">

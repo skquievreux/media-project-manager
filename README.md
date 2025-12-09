@@ -1,8 +1,8 @@
 # Media Project Manager (MPM)
 
-![Version](https://img.shields.io/badge/version-1.5.1-blue.svg)
+![Version](https://img.shields.io/badge/version-1.5.2-blue.svg)
 ![Electron](https://img.shields.io/badge/Electron-Desktop-orange.svg)
-![Feature](https://img.shields.io/badge/feature-Smart_Templates-purple.svg)
+![Feature](https://img.shields.io/badge/feature-Audio_Visualizer-purple.svg)
 ![Language](https://img.shields.io/badge/language-Deutsch-red.svg)
 
 ## 📄 Über das Projekt
@@ -16,7 +16,7 @@ Das Ziel der Anwendung ist es, die Lücke zwischen Dateisystem (Explorer/Finder)
 *   **Medien-Chaos:** Assets (Bilder, Videos) liegen verstreut in Unterordnern.
 *   **Manuelle Prozesse:** Das Zählen von Tracks oder das Prüfen auf Vorhandensein notwendiger Schritte kostet Zeit.
 
-## 🚀 Hauptfunktionen (v1.5.1)
+## 🚀 Hauptfunktionen (v1.5.2)
 
 ### 1. 🪄 Smart Templates & Workflows
 Starten Sie neue Projekte blitzschnell mit vordefinierten Schablonen für verschiedene Medientypen (Single Song, Album, Kinderbuch, Werbespot). Jedes Template enthält automatisch alle notwendigen Tasks und Milestones.

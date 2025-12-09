@@ -3,6 +3,7 @@ import { PROJECT_TYPES } from '../constants/projectTypes';
 import TaskTracker from './TaskTracker';
 import FileDropZone from './FileDropZone';
 import SmartPrompts from './SmartPrompts';
+import AudioVisualizer from './AudioVisualizer';
 import './ProjectDetailView.css';
 
 function ProjectDetailView({ project, onBack, onUpdateProject }) {
@@ -12,6 +13,7 @@ function ProjectDetailView({ project, onBack, onUpdateProject }) {
   const [promptType, setPromptType] = useState('suno');
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [titleInput, setTitleInput] = useState('');
+  const [activeMediaId, setActiveMediaId] = useState(null);
 
   // Debug log to ensure HMR update
   console.log('Rendering ProjectDetailView', { projectId: project.id, isEditingTitle });
@@ -107,6 +109,12 @@ function ProjectDetailView({ project, onBack, onUpdateProject }) {
       return mins > 0 ? `${hours}h ${mins}min` : `${hours}h`;
     }
     return `${minutes}min`;
+  };
+
+  const formatFileSize = (bytes) => {
+    if (!bytes) return '';
+    const mb = bytes / (1024 * 1024);
+    return `${mb.toFixed(2)} MB`;
   };
 
   const handleSaveNotes = () => {
@@ -318,11 +326,25 @@ function ProjectDetailView({ project, onBack, onUpdateProject }) {
             )}
             <div className="assets-grid">
               {(project.assets || []).map(asset => (
-                <div key={asset.id} className="asset-card">
+                <div key={asset.id} className={`asset-card ${activeMediaId === asset.id ? 'active' : ''}`}>
                   <div className="asset-preview">
                     {asset.type === 'image' && <img src={getSafeUrl(asset.url)} alt={asset.name} className="asset-preview-img" loading="lazy" />}
-                    {asset.type === 'video' && <video src={getSafeUrl(asset.url)} controls className="asset-preview-video" />}
-                    {asset.type === 'audio' && <audio src={getSafeUrl(asset.url)} controls className="asset-preview-audio" />}
+                    {asset.type === 'video' && (
+                      <video
+                        src={getSafeUrl(asset.url)}
+                        controls
+                        className="asset-preview-video"
+                        onPlay={() => setActiveMediaId(asset.id)}
+                      />
+                    )}
+                    {asset.type === 'audio' && (
+                      <div className="asset-preview-visualizer">
+                        <AudioVisualizer
+                          src={getSafeUrl(asset.url)}
+                          onPlay={() => setActiveMediaId(asset.id)}
+                        />
+                      </div>
+                    )}
                     {asset.type !== 'image' && asset.type !== 'video' && asset.type !== 'audio' && (
                       <div className="asset-icon-large">
                         {asset.type === 'document' && '📄'}
@@ -330,7 +352,13 @@ function ProjectDetailView({ project, onBack, onUpdateProject }) {
                       </div>
                     )}
                   </div>
-                  <div className="asset-info"><div className="asset-name">{asset.name}</div><div className="asset-date">{formatDate(asset.addedAt)}</div></div>
+                  <div className="asset-info">
+                    <div className="asset-name" title={asset.name}>{asset.name}</div>
+                    <div className="asset-meta">
+                      <span className="asset-date">{formatDate(asset.addedAt)}</span>
+                      {asset.size && <span className="asset-size">{formatFileSize(asset.size)}</span>}
+                    </div>
+                  </div>
                   <div className="asset-actions">
                     <button onClick={() => openExternal(asset.url)}>Öffnen</button>
                     <button onClick={() => handleDeleteAsset(asset.id)}>🗑️</button>

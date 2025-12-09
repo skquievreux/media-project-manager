@@ -112,6 +112,23 @@
     color: var(--color-primary-light);
 }
 
+.filter-toggle-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: var(--space-xs) var(--space-md);
+    background: transparent;
+    border: none;
+    color: var(--color-text-tertiary);
+    font-size: var(--font-size-xs);
+    cursor: pointer;
+    transition: color var(--transition-fast);
+}
+
+.filter-toggle-btn:hover {
+    color: var(--color-text-secondary);
+}
+
 .project-list {
     display: flex;
     flex-direction: column;

@@ -1,6 +1,30 @@
 {
     "versions": [
         {
+            "version": "1.5.2",
+            "date": "2025-12-09",
+            "type": "patch",
+            "title": "Media Player Redesign & Fixes",
+            "changes": [
+                {
+                    "type": "feature",
+                    "text": "Audio Visualizer: Neuer dynamischer 'Waveform'-Player mit Echtzeit-Animation (Neon/Aurora-Effekte)."
+                },
+                {
+                    "type": "fix",
+                    "text": "Medienwiedergabe: Protokoll-Handler (media://) repariert; lokale Audio- und Videodateien werden nun zuverlässig geladen."
+                },
+                {
+                    "type": "improvement",
+                    "text": "UI/UX: Verbessertes Player-Design mit Glassmorphism-Controls und klaren Icons."
+                },
+                {
+                    "type": "improvement",
+                    "text": "Assets: Visuelles Hervorheben (Active State) des aktuell spielenden Titels und Anzeige der Dateigröße."
+                }
+            ]
+        },
+        {
             "version": "1.5.1",
             "date": "2025-12-09",
             "type": "patch",

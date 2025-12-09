@@ -72,29 +72,38 @@ async function createWindow() {
     }
 }
 
+// Register privileges to allow fetching local resources
+protocol.registerSchemesAsPrivileged([
+    { scheme: 'media', privileges: { secure: true, standard: true, supportFetchAPI: true, bypassCSP: true } }
+]);
+
 app.whenReady().then(() => {
     // Register 'media' protocol to serve local files
+    // Register 'media' protocol to serve local files
     protocol.registerFileProtocol('media', (request, callback) => {
-        let url = request.url.replace('media://', '');
-        // Decode URL to handle spaces and special chars
-        url = decodeURIComponent(url);
+        try {
+            // Strip protocol and all leading slashes (media://, media:///, etc.)
+            let url = request.url.replace(/^media:\/\/+/, '');
+            url = decodeURIComponent(url);
 
-        // Handle Windows drive letters
-        // Browser might send media://C:/ or media:///C:/
-        // The replace('media://', '') might leave 'C:/...' or '/C:/...'
+            // Handle Windows drive letters where colon might be missing or stripped
+            // Case 1: "c/Users/..." -> "c:/Users/..."
+            if (process.platform === 'win32' && url.match(/^[a-zA-Z]\//)) {
+                url = url.charAt(0) + ':' + url.slice(1);
+            }
 
-        if (process.platform === 'win32') {
-            // If we have a leading slash followed by a drive letter (e.g. /C:), strip the slash
-            if (url.startsWith('/') && url.match(/^\/[a-zA-Z]:/)) {
+            // Case 2: "/c:/Users/..." -> "c:/Users/..." (if strip failed to catch leading slash from path)
+            if (process.platform === 'win32' && url.match(/^\/[a-zA-Z]:/)) {
                 url = url.slice(1);
             }
-            // Else if it already looks like C:/..., leave it
-        }
 
-        try {
-            return callback(url);
+            const normalizedPath = path.normalize(url);
+            // console.log(`Media Protocol: ${request.url} -> ${normalizedPath}`);
+
+            return callback({ path: normalizedPath });
         } catch (error) {
-            console.error('Failed to register protocol', error);
+            console.error('Failed to handle media protocol request:', error);
+            return callback({ error: -2 }); // FILE_NOT_FOUND
         }
     });
 
@@ -290,7 +299,7 @@ ipcMain.handle('scan-project-resources', async (event, projectPath) => {
                             id: Date.now() + Math.random(),
                             name: item.name,
                             type: type,
-                            url: `media://${fullPath}`, // Use custom media protocol for local display
+                            url: 'media:///' + fullPath.split(path.sep).join('/'), // Standardize URL path
                             path: fullPath,
                             size: (await fs.promises.stat(fullPath)).size
                         });
