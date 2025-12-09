@@ -11,16 +11,26 @@ import './TaskTracker.css';
  * - Start/Stop/Pause timer
  * - Estimated vs Actual time tracking
  * - Efficiency calculation
- * - Task dependencies
- * - Progress tracking
+ * - Manual editing of tasks
  *
  * Built by Claude for Don Key
  */
 function TaskTracker({ project, onUpdateProject }) {
   const [tasks, setTasks] = useState(project.tasks || []);
   const [activeTaskId, setActiveTaskId] = useState(null);
+  const [editingTaskId, setEditingTaskId] = useState(null);
+  const [editForm, setEditForm] = useState({});
   const [currentTime, setCurrentTime] = useState(Date.now());
   const [showStats, setShowStats] = useState(false);
+
+  // Sync tasks with project props when they change (e.g. from Smart Template)
+  useEffect(() => {
+    if (project.tasks) {
+      setTasks(project.tasks);
+      // Ensure we don't lose active state if it exists locally but not in prop? 
+      // Actually usually active state is derived or local. We keep local.
+    }
+  }, [project.tasks]);
 
   // Update current time every second for timer display
   useEffect(() => {
@@ -34,7 +44,7 @@ function TaskTracker({ project, onUpdateProject }) {
   // Calculate task statistics
   const calculateStats = () => {
     const completed = tasks.filter(t => t.status === 'completed');
-    const totalEstimated = tasks.reduce((sum, t) => sum + t.estimatedTime, 0);
+    const totalEstimated = tasks.reduce((sum, t) => sum + (t.estimatedTime || 0), 0);
     const totalActual = completed.reduce((sum, t) => sum + (t.actualTime || 0), 0);
     const efficiency = totalActual > 0 ? (totalEstimated / totalActual) * 100 : 100;
 
@@ -103,6 +113,9 @@ function TaskTracker({ project, onUpdateProject }) {
     } else if (task.pausedDuration) {
       actualTime = Math.round(task.pausedDuration / 60000);
     }
+    // If manual edit happened before, prefer that or combine? For now, if timer ran, use timer. 
+    // If it was just pending/manual, keep existing actualTime or use estimated.
+    if (actualTime === 0 && task.actualTime) actualTime = task.actualTime;
 
     const updatedTasks = tasks.map(t => {
       if (t.id === taskId) {
@@ -144,11 +157,62 @@ function TaskTracker({ project, onUpdateProject }) {
     checkDependencies(taskId, updatedTasks);
   };
 
+  // Reset Task
+  const resetTask = (taskId) => {
+    if (!confirm('Task wirklich zurücksetzen? Alle Fortschritte gehen verloren.')) return;
+
+    const updatedTasks = tasks.map(t => {
+      if (t.id === taskId) {
+        return {
+          ...t,
+          status: 'pending',
+          startedAt: null,
+          completedAt: null,
+          pausedDuration: 0,
+          actualTime: 0,
+          skippedReason: null
+        };
+      }
+      return t;
+    });
+    setTasks(updatedTasks);
+    saveToProject(updatedTasks);
+  };
+
+  // Edit Task
+  const startEdit = (task) => {
+    setEditingTaskId(task.id);
+    setEditForm({
+      label: task.label,
+      estimatedTime: task.estimatedTime,
+      actualTime: task.actualTime || 0
+    });
+  };
+
+  const saveEdit = () => {
+    const updatedTasks = tasks.map(t => {
+      if (t.id === editingTaskId) {
+        return {
+          ...t,
+          label: editForm.label,
+          estimatedTime: parseInt(editForm.estimatedTime) || 0,
+          actualTime: parseInt(editForm.actualTime) || 0
+        };
+      }
+      return t;
+    });
+    setTasks(updatedTasks);
+    saveToProject(updatedTasks);
+    setEditingTaskId(null);
+  };
+
+  const cancelEdit = () => {
+    setEditingTaskId(null);
+    setEditForm({});
+  };
+
   // Check and unblock dependent tasks
   const checkDependencies = (completedTaskId, currentTasks) => {
-    const task = currentTasks.find(t => t.id === completedTaskId);
-    if (!task || !task.dependencies) return;
-
     const updatedTasks = currentTasks.map(t => {
       if (t.dependencies && t.dependencies.includes(completedTaskId)) {
         const allDependenciesMet = t.dependencies.every(depId => {
@@ -225,7 +289,6 @@ function TaskTracker({ project, onUpdateProject }) {
       'tracks_generated': 'suno'
     };
 
-    // Check for exact match or strict prefix match (task.id contains dynamic suffix)
     for (const [key, type] of Object.entries(types)) {
       if (taskId === key || taskId.startsWith(key + '_')) {
         return type;
@@ -311,6 +374,45 @@ function TaskTracker({ project, onUpdateProject }) {
           const isActive = activeTaskId === task.id;
           const isBlocked = isTaskBlocked(task);
           const elapsed = isActive ? getElapsedTime(task) : (task.pausedDuration || 0);
+          const isEditing = editingTaskId === task.id;
+
+          if (isEditing) {
+            return (
+              <div key={task.id} className="task-item editing">
+                <div className="edit-form">
+                  <input
+                    type="text"
+                    value={editForm.label}
+                    onChange={(e) => setEditForm({ ...editForm, label: e.target.value })}
+                    placeholder="Task Name"
+                    className="edit-input"
+                  />
+                  <div className="edit-row">
+                    <label>Geschätzt (min):
+                      <input
+                        type="number"
+                        value={editForm.estimatedTime}
+                        onChange={(e) => setEditForm({ ...editForm, estimatedTime: e.target.value })}
+                        className="edit-input-small"
+                      />
+                    </label>
+                    <label>Tatsächlich (min):
+                      <input
+                        type="number"
+                        value={editForm.actualTime}
+                        onChange={(e) => setEditForm({ ...editForm, actualTime: e.target.value })}
+                        className="edit-input-small"
+                      />
+                    </label>
+                  </div>
+                  <div className="edit-actions">
+                    <button onClick={saveEdit} className="btn-save">💾 Speichern</button>
+                    <button onClick={cancelEdit} className="btn-cancel">❌ Abbrechen</button>
+                  </div>
+                </div>
+              </div>
+            );
+          }
 
           return (
             <div
@@ -369,79 +471,45 @@ function TaskTracker({ project, onUpdateProject }) {
                     </div>
                   )}
 
-
-                  {/* Tool Links Integration */}
                   <ToolLinkButtons project={project} task={task} />
 
-                  {/* Smart Prompts Integration */}
                   {task.status === 'in_progress' && getPromptType(task.id) && (
                     <SmartPrompts project={project} type={getPromptType(task.id)} />
                   )}
                 </div>
 
                 <div className="task-actions">
+                  {/* Start/Pause/Complete Buttons */}
                   {task.status === 'pending' && !isBlocked && (
-                    <button
-                      className="btn-action start"
-                      onClick={() => startTask(task.id)}
-                      title="Start"
-                    >
-                      ▶️
-                    </button>
+                    <button className="btn-action start" onClick={() => startTask(task.id)} title="Start">▶️</button>
                   )}
 
                   {task.status === 'in_progress' && (
                     <>
-                      <button
-                        className="btn-action pause"
-                        onClick={() => pauseTask(task.id)}
-                        title="Pause"
-                      >
-                        ⏸️
-                      </button>
-                      <button
-                        className="btn-action complete"
-                        onClick={() => completeTask(task.id)}
-                        title="Complete"
-                      >
-                        ✅
-                      </button>
+                      <button className="btn-action pause" onClick={() => pauseTask(task.id)} title="Pause">⏸️</button>
+                      <button className="btn-action complete" onClick={() => completeTask(task.id)} title="Complete">✅</button>
                     </>
                   )}
 
                   {task.status === 'paused' && (
                     <>
-                      <button
-                        className="btn-action start"
-                        onClick={() => startTask(task.id)}
-                        title="Resume"
-                      >
-                        ▶️
-                      </button>
-                      <button
-                        className="btn-action complete"
-                        onClick={() => completeTask(task.id)}
-                        title="Complete"
-                      >
-                        ✅
-                      </button>
+                      <button className="btn-action start" onClick={() => startTask(task.id)} title="Resume">▶️</button>
+                      <button className="btn-action complete" onClick={() => completeTask(task.id)} title="Complete">✅</button>
                     </>
                   )}
 
-                  {(task.status === 'pending' || task.status === 'in_progress' || task.status === 'paused') && (
-                    <button
-                      className="btn-action skip"
-                      onClick={() => {
-                        // prompt() is often blocked in Electron/Apps, using simple confirm for now
-                        if (confirm('Möchtest du diesen Task wirklich überspringen?')) {
-                          skipTask(task.id, 'Skipped by user');
-                        }
-                      }}
-                      title="Skip"
-                    >
-                      ⏭️
-                    </button>
+                  {/* Restart for Completed Tasks */}
+                  {task.status === 'completed' && (
+                    <button className="btn-action restart" onClick={() => resetTask(task.id)} title="Neu starten">🔄</button>
                   )}
+
+                  {/* Skip Button */}
+                  {(task.status === 'pending' || task.status === 'in_progress' || task.status === 'paused') && (
+                    <button className="btn-action skip" onClick={() => { if (confirm('Überspringen?')) skipTask(task.id, 'User skipped'); }} title="Skip">⏭️</button>
+                  )}
+
+                  {/* Edit Button - Always available */}
+                  <button className="btn-action edit" onClick={() => startEdit(task)} title="Rechtsklick um Aufgaben zu bearbeiten">✏️</button>
                 </div>
               </div>
             </div>

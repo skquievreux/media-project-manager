@@ -1,6 +1,34 @@
 {
     "versions": [
         {
+            "version": "1.5.1",
+            "date": "2025-12-09",
+            "type": "patch",
+            "title": "Bugfixes & Workflow Optimierungen",
+            "changes": [
+                {
+                    "type": "fix",
+                    "text": "Projekt-Erstellung: Fehler bei der Duplikat-Erkennung behoben; automatische Nummerierung für neue Projekte."
+                },
+                {
+                    "type": "fix",
+                    "text": "Inline-Editing: Projekttitel können nun direkt durch Anklicken bearbeitet werden (behebt Prompt-Absturz)."
+                },
+                {
+                    "type": "feat",
+                    "text": "Task Tracker: Aufgaben können nun bearbeitet, manuell korrigiert und (nach Abschluss) neu gestartet werden."
+                },
+                {
+                    "type": "feat",
+                    "text": "Smart Templates: Bessere Rückmeldung beim Anwenden von Templates (vermeidet 'stille' Aktionen)."
+                },
+                {
+                    "type": "feat",
+                    "text": "Quick Links: Transkriptor hinzugefügt."
+                }
+            ]
+        },
+        {
             "version": "1.5.0",
             "date": "2025-12-08",
             "type": "minor",

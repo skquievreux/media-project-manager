@@ -9,7 +9,12 @@ function ProjectDetailView({ project, onBack, onUpdateProject }) {
   const [activeTab, setActiveTab] = useState('tasks');
   const [notes, setNotes] = useState(project.notes || '');
   const [showAddAsset, setShowAddAsset] = useState(false);
-  const [promptType, setPromptType] = useState('suno'); // State for the new tab selector
+  const [promptType, setPromptType] = useState('suno');
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [titleInput, setTitleInput] = useState('');
+
+  // Debug log to ensure HMR update
+  console.log('Rendering ProjectDetailView', { projectId: project.id, isEditingTitle });
 
   const projectType = PROJECT_TYPES[project.projectType] || PROJECT_TYPES[project.type] || {};
   const stats = calculateProjectStats();
@@ -166,7 +171,23 @@ function ProjectDetailView({ project, onBack, onUpdateProject }) {
       <div className="detail-header">
         <button className="btn-back" onClick={onBack}>← Zurück</button>
         <div className="header-actions">
-          <button className="btn-secondary" onClick={() => onUpdateProject({ ...project, tasks: [...(project.tasks || []), ...(projectType.defaultTasks?.filter(t => !project.tasks?.some(pt => pt.label === t.label)) || [])] })}>
+          <button className="btn-secondary" onClick={() => {
+            const defaultTasks = projectType.defaultTasks || [];
+            const existingLabels = new Set((project.tasks || []).map(t => t.label));
+            const newTasks = defaultTasks.filter(t => !existingLabels.has(t.label));
+
+            if (newTasks.length === 0) {
+              alert('Alle Standard-Tasks für dieses Template sind bereits vorhanden.');
+              return;
+            }
+
+            if (window.confirm(`${newTasks.length} neue Tasks aus dem Template hinzufügen?`)) {
+              onUpdateProject({
+                ...project,
+                tasks: [...(project.tasks || []), ...newTasks]
+              });
+            }
+          }}>
             🪄 Smart Template anwenden
           </button>
           <button className="btn-folder" onClick={openFolder} disabled={!project.folder}>📁 Ordner öffnen</button>
@@ -176,7 +197,54 @@ function ProjectDetailView({ project, onBack, onUpdateProject }) {
       <div className="hero-section" style={{ '--type-color': projectType.color || '#3b82f6' }}>
         <div className="hero-icon">{projectType.icon || '📦'}</div>
         <div className="hero-content">
-          <h1 className="project-title">{project.name}</h1>
+          {isEditingTitle ? (
+            <input
+              type="text"
+              value={titleInput}
+              onChange={(e) => setTitleInput(e.target.value)}
+              onBlur={() => {
+                if (titleInput.trim() !== project.name) {
+                  onUpdateProject({ ...project, name: titleInput.trim() });
+                }
+                setIsEditingTitle(false);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  if (titleInput.trim() !== project.name) {
+                    onUpdateProject({ ...project, name: titleInput.trim() });
+                  }
+                  setIsEditingTitle(false);
+                } else if (e.key === 'Escape') {
+                  setIsEditingTitle(false);
+                }
+              }}
+              autoFocus
+              className="project-title-input"
+              style={{
+                fontSize: '2rem',
+                fontWeight: 'bold',
+                background: 'transparent',
+                border: 'none',
+                borderBottom: '2px solid var(--type-color, #3b82f6)',
+                color: 'white',
+                width: '100%',
+                marginBottom: '0.5rem',
+                outline: 'none'
+              }}
+            />
+          ) : (
+            <h1
+              className="project-title"
+              onClick={() => {
+                setTitleInput(project.name);
+                setIsEditingTitle(true);
+              }}
+              title="Klicken zum Bearbeiten"
+              style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+            >
+              {project.name} <span style={{ fontSize: '0.5em', opacity: 0.5 }}>✏️</span>
+            </h1>
+          )}
           <div className="project-meta">
             <span className="meta-item">{projectType.label || project.type}</span>
             <span className="meta-item">Erstellt: {formatDate(project.createdAt)}</span>
@@ -318,6 +386,7 @@ function ProjectDetailView({ project, onBack, onUpdateProject }) {
               <a href="https://artify.unlock-your-song.de/" target="_blank" rel="noopener noreferrer" className="link-card"><span className="link-icon">🖼️</span><span className="link-label">Artify</span></a>
               <a href="https://artists.spotify.com/c/de/artist/0hyYhfUiuBwBbPQZdM8D2d/home" target="_blank" rel="noopener noreferrer" className="link-card"><span className="link-icon">📊</span><span className="link-label">Spotify Artists</span></a>
               <a href="https://sendfox.com/dashboard/emails" target="_blank" rel="noopener noreferrer" className="link-card"><span className="link-icon">📧</span><span className="link-label">Sendfox</span></a>
+              <a href="https://transkriptor.runitfast.xyz/" target="_blank" rel="noopener noreferrer" className="link-card"><span className="link-icon">📝</span><span className="link-label">Transkriptor</span></a>
             </div>
           </div>
         )}
