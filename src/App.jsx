@@ -56,13 +56,21 @@ function App() {
     }
   }, [projects, isLoaded]);
 
-  // Filter projects based on type and search query
-  const filteredProjects = projects.filter(project => {
-    const matchesFilter = filter === 'all' || project.type === filter;
-    const matchesSearch = project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      project.description.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesFilter && matchesSearch;
-  });
+  // Filter and Sort projects
+  const filteredProjects = projects
+    .filter(project => {
+      const matchesFilter = filter === 'all' || project.type === filter;
+      const matchesSearch = project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        project.description.toLowerCase().includes(searchQuery.toLowerCase());
+      return matchesFilter && matchesSearch;
+    })
+    .sort((a, b) => {
+      // Favorites first
+      if (a.starred && !b.starred) return -1;
+      if (!a.starred && b.starred) return 1;
+      // Then by date (newest first) - assuming IDs are timestamp based or just stable sort
+      return b.id - a.id;
+    });
 
   // Create new project (or import)
   const handleNewProject = async (projectData) => {

@@ -24,6 +24,15 @@ contextBridge.exposeInMainWorld('electron', {
   openPath: (path) => ipcRenderer.invoke('open-path', path),
   showItemInFolder: (path) => ipcRenderer.invoke('show-item-in-folder', path),
 
+  // Watcher
+  startWatcher: (path) => ipcRenderer.invoke('start-watcher', path),
+  stopWatcher: () => ipcRenderer.invoke('stop-watcher'),
+  onWatcherFileDetected: (callback) => ipcRenderer.on('watcher-file-detected', (event, file) => callback(file)),
+  removeWatcherListener: () => ipcRenderer.removeAllListeners('watcher-file-detected'),
+
+  // Zip
+  processZipUpload: (zipPath, targetFolder) => ipcRenderer.invoke('process-zip-upload', { zipPath, targetFolder }),
+
   // File Utils (Required for File object path access in Renderer)
   getPathForFile: (file) => webUtils.getPathForFile(file),
 

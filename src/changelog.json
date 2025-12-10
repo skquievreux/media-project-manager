@@ -1,6 +1,30 @@
 {
     "versions": [
         {
+            "version": "1.5.5",
+            "date": "2025-12-10",
+            "type": "patch",
+            "title": "UI Polish & Smart Favorites",
+            "changes": [
+                {
+                    "type": "ui",
+                    "text": "Design: Konsequente Anwendung des 'Smart Template'-Themes (Glassmorphismus) auf Dashboard, Sidebar und alle Views."
+                },
+                {
+                    "type": "ui",
+                    "text": "Smart Colors: Projekttypen (Audio, Video, etc.) sind nun durchgängig farblich codiert (Icons, Progress Bars, Glow-Effekte)."
+                },
+                {
+                    "type": "feature",
+                    "text": "Favoriten: Markierte Projekte (Sterne) werden in allen Listen und Filtern priorisiert ganz oben angezeigt."
+                },
+                {
+                    "type": "ui",
+                    "text": "Konsistenz: Dashboard-Karten und Sidebar-Icons nutzen dynamische Typ-Farben für bessere Übersicht."
+                }
+            ]
+        },
+        {
             "version": "1.5.4",
             "date": "2025-12-10",
             "type": "patch",

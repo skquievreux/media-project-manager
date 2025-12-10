@@ -8,6 +8,7 @@ const ASSET_TYPES = [
     { id: 'beat', label: 'Beat / Instrumental', folder: 'Audio/Beats' },
     { id: 'cover', label: 'Cover Art', folder: 'Images/Cover' },
     { id: 'social', label: 'Social Media', folder: 'Images/Social' },
+    { id: 'campaign', label: 'Kampagne / Marketing', folder: 'Marketing' }, // New Category
     { id: 'lyrics', label: 'Lyrics', folder: 'Docs' },
     { id: 'contract', label: 'Contract', folder: 'Docs/Legal' },
     { id: 'other', label: 'Other', folder: 'Misc' }
@@ -47,18 +48,24 @@ const AssetImportDialog = ({ files, project, onSave, onCancel }) => {
         if (!currentFile) return '';
         const ext = currentFile.name.split('.').pop();
 
+        // Special handling for Campaign Layouts
+        // If it's a campaign asset and we have a relative path, we want to keep the folder structure
+        // e.g. "platform-teasers/image.png" -> "Marketing/Social/platform-teasers/ACRONYM_image.png"
+        // But the folder logic is handled in handleNext. Here we construct the file NAME.
+        // Actually, renaming deeply nested files might be complex.
+        // Let's stick to standard naming but if 'campaign', maybe we don't rename as aggressively?
+
         let parts = [];
 
-        // 1. Acronym
+        // 1. Acronym (Always good)
         parts.push(acronym.replace(/[^a-zA-Z0-9]/g, ''));
 
-        // 2. Track Number (only if set)
+        // 2. Track Number
         if (trackNumber) {
             parts.push(trackNumber.toString().padStart(2, '0'));
         }
 
-        // 3. Name (Titel)
-        // If customName is set, use it. Otherwise use original filename (sanitized)
+        // 3. Name part
         let namePart = customName.replace(/[^a-zA-Z0-9]/g, '');
         if (!namePart) {
             namePart = currentFile.name.replace(/\.[^/.]+$/, "").replace(/[^a-zA-Z0-9]/g, '');
@@ -78,14 +85,25 @@ const AssetImportDialog = ({ files, project, onSave, onCancel }) => {
 
     const handleNext = () => {
         const typeConfig = ASSET_TYPES.find(t => t.id === selectedType);
-        const newFilename = generateFilename();
+        let newFilename = generateFilename();
+        let targetFolder = typeConfig.folder;
+
+        // SMART CAMPAIGN LOGIC
+        // If we have relativePath (from Zip), append the subfolder structure
+        if (selectedType === 'campaign' && currentFile.relativePath) {
+            // relativePath is like "subfolder/file.png" or just "file.png"
+            const dir = currentFile.relativePath.replace(/\\/g, '/').split('/').slice(0, -1).join('/');
+            if (dir && dir !== '.') {
+                targetFolder = `${targetFolder}/${dir}`;
+            }
+        }
 
         // Pass result back
         const result = {
             originalFile: currentFile,
             type: selectedType,
             category: typeConfig.folder.split('/')[0].toLowerCase(),
-            folder: typeConfig.folder,
+            folder: targetFolder, // Dynamically adjusted folder
             newFilename: newFilename,
             // Extra Metadata
             acronym,
@@ -95,10 +113,12 @@ const AssetImportDialog = ({ files, project, onSave, onCancel }) => {
         };
 
         if (currentIndex < files.length - 1) {
-            // Move to next file? For now just Save & Close logic as requested by user flow usually implies one or sequential.
-            // But strict implementation of single file callback:
+            // Move to next (simplified for now to just finish one by one or bulk same settings)
+            // User requested bulk but the dialog is single-step wizard.
+            // We'll leave it as is for now: User clicks "Import" for each file in queue.
+            // Ideally we'd have "Apply to All" but that's a bigger feature.
+            // For now we just call onSave which pops the queue in parent.
             onSave(result);
-            // Parent handles queue management
         } else {
             onSave(result);
         }

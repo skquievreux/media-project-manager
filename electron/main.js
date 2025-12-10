@@ -4,6 +4,7 @@ import { fileURLToPath } from 'url';
 import fs from 'fs';
 import http from 'http';
 import https from 'https';
+import AdmZip from 'adm-zip';
 import {
     saveApiKey,
     getApiKey,
@@ -356,6 +357,7 @@ ipcMain.handle('scan-project-resources', async (event, projectPath) => {
 });
 
 // IPC Handler for Intelligent File Import
+// IPC Handler for Intelligent File Import
 ipcMain.handle('import-file', async (event, { sourcePath, destinationFolder, newFilename }) => {
     try {
         const destPath = path.join(destinationFolder, newFilename);
@@ -363,8 +365,18 @@ ipcMain.handle('import-file', async (event, { sourcePath, destinationFolder, new
         // Ensure destination folder exists
         await fs.promises.mkdir(destinationFolder, { recursive: true });
 
-        // Copy file (safer than move across drives)
-        await fs.promises.copyFile(sourcePath, destPath);
+        // Try to move (rename) first
+        try {
+            await fs.promises.rename(sourcePath, destPath);
+        } catch (err) {
+            // If cross-device link error (EXDEV), fall back to copy and unlink
+            if (err.code === 'EXDEV') {
+                await fs.promises.copyFile(sourcePath, destPath);
+                await fs.promises.unlink(sourcePath);
+            } else {
+                throw err;
+            }
+        }
 
         const stats = await fs.promises.stat(destPath);
 
@@ -376,6 +388,118 @@ ipcMain.handle('import-file', async (event, { sourcePath, destinationFolder, new
         };
     } catch (error) {
         console.error('Import file failed:', error);
+        return { success: false, error: error.message };
+    }
+});
+
+// Watcher Global State
+let activeWatcher = null;
+
+ipcMain.handle('start-watcher', (event, folderPath) => {
+    try {
+        if (activeWatcher) {
+            activeWatcher.close();
+        }
+
+        if (!fs.existsSync(folderPath)) return { error: 'Folder not found' };
+
+        // Simple fs.watch for now
+        activeWatcher = fs.watch(folderPath, (eventType, filename) => {
+            if (filename && eventType === 'rename') {
+                // Check if file exists (creation) or was removed
+                const fullPath = path.join(folderPath, filename);
+                fs.stat(fullPath, (err, stats) => {
+                    if (!err && stats.isFile()) {
+                        // Send event to renderer
+                        if (event.sender) {
+                            event.sender.send('watcher-file-detected', {
+                                name: filename,
+                                path: fullPath,
+                                size: stats.size
+                            });
+                        }
+                    }
+                });
+            }
+        });
+
+        console.log(`Watcher started on: ${folderPath}`);
+        return { success: true };
+    } catch (err) {
+        return { error: err.message };
+    }
+});
+
+ipcMain.handle('stop-watcher', () => {
+    if (activeWatcher) {
+        activeWatcher.close();
+        activeWatcher = null;
+        console.log('Watcher stopped');
+    }
+    return { success: true };
+});
+
+// IPC Handler for Zip Handling
+ipcMain.handle('process-zip-upload', async (event, { zipPath, targetFolder }) => {
+    try {
+        if (!fs.existsSync(zipPath)) {
+            return { success: false, error: 'Zip file not found' };
+        }
+
+        console.log(`Processing Zip: ${zipPath} -> ${targetFolder}`);
+
+        const zip = new AdmZip(zipPath);
+        const zipEntries = zip.getEntries();
+        const extractedFiles = [];
+
+        // Create a temporary extraction folder within the target (or use system temp)
+        // We use a timestamped folder inside target to keep it organized until imported
+        const extractDir = path.join(targetFolder, `Unzipped_${Date.now()}`);
+        await fs.promises.mkdir(extractDir, { recursive: true });
+
+        zip.extractAllTo(extractDir, true);
+
+        // Scan extracted files
+        async function scanExtracted(dir) {
+            const items = await fs.promises.readdir(dir, { withFileTypes: true });
+            for (const item of items) {
+                const fullPath = path.join(dir, item.name);
+                if (item.isDirectory()) {
+                    await scanExtracted(fullPath);
+                } else {
+                    const ext = path.extname(item.name).toLowerCase();
+                    // Basic filter for known assets (plus txt for info)
+                    if (['.jpg', '.jpeg', '.png', '.gif', '.mp3', '.wav', '.mp4', '.mov', '.pdf', '.txt'].includes(ext)) {
+                        // We check if it's not a hidden file (e.g. __MACOSX garbage)
+                        if (!item.name.startsWith('.')) {
+                            const stats = await fs.promises.stat(fullPath);
+                            const relativePath = path.relative(extractDir, fullPath);
+                            extractedFiles.push({
+                                name: item.name,
+                                path: fullPath,
+                                relativePath: relativePath, // Pass relative structure
+                                size: stats.size,
+                                type: 'auto' // Will be determined by Dialog
+                            });
+                        }
+                    }
+                }
+            }
+        }
+
+        await scanExtracted(extractDir);
+
+        // Delete Original Zip
+        try {
+            await fs.promises.unlink(zipPath);
+            console.log(`Deleted original zip: ${zipPath}`);
+        } catch (e) {
+            console.warn(`Failed to delete zip: ${e.message}`);
+        }
+
+        return { success: true, files: extractedFiles, tempPath: extractDir };
+    } catch (error) {
+        logError('process-zip-upload', error.message);
         return { success: false, error: error.message };
     }
 });

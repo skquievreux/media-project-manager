@@ -40,23 +40,28 @@ const HelpModal = ({ onClose }) => {
                             <h3>🚀 Erweiterte Feature-Liste</h3>
 
                             <div className="feature-item">
-                                <h4>Projekt-Management</h4>
-                                <p>Erstellen, Bearbeiten und Organisieren von Medienprojekten. Kategorisierung nach Video, Audio, Bild und Dokumenten.</p>
+                                <h4>📂 Smart Import & Drag & Drop</h4>
+                                <p>Ziehen Sie Dateien oder ganze <b>Zip-Pakete</b> einfach in den blauen Bereich. Zip-Dateien werden automatisch entpackt, sortiert und können in einem Rutsch kategorisiert werden. Dateien werden dabei <b>verschoben</b> (nicht kopiert), um Ihre Downloads sauber zu halten.</p>
                             </div>
 
                             <div className="feature-item">
-                                <h4>Fortschritts-Tracking</h4>
-                                <p>Detaillierte Verfolgung des Projektstatus von der Planung bis zur Fertigstellung mit visuellen Fortschrittsbalken.</p>
+                                <h4>👁️ Intelligenter Ordner-Wächter</h4>
+                                <p>Aktivieren Sie den <b>Downloader Watcher</b> (das Augen-Symbol), um Ihren Download-Ordner zu überwachen. Neue Dateien (z.B. von Suno oder Splice) werden sofort erkannt und zum Import angeboten.</p>
                             </div>
 
                             <div className="feature-item">
-                                <h4>Asset-Verwaltung</h4>
-                                <p>Zentraler Ort für alle Projektdateien. Unterstützt Drag & Drop (geplant) und Metadaten-Anzeige.</p>
+                                <h4>📣 Kampagnen-Support</h4>
+                                <p>Importieren Sie Zip-Archive mit komplexen Ordnerstrukturen (z.B. "Social Media Blitz"). Wählen Sie als Kategorie <b>"Kampagne / Marketing"</b>, und die App behält die Unterordner bei (z.B. <code>Marketing/Teasers/reel.mp4</code>).</p>
                             </div>
 
                             <div className="feature-item">
-                                <h4>Automatisierung (Vorschau)</h4>
-                                <p>Automatische Thumbnail-Generierung und Batch-Uploads für effizientere Workflows.</p>
+                                <h4>🏷️ Smart Rename & Struktur</h4>
+                                <p>Assets werden automatisch nach Ihrem Projektnamen und Kürzel benannt (z.B. <code>PROJ_Track_01_v1.mp3</code>). Mit "Smart Rename" können Sie bestehende Dateien jederzeit sauber neu benennen und einsortieren.</p>
+                            </div>
+
+                            <div className="feature-item">
+                                <h4>🏗️ Ordnerstruktur & Vorlagen</h4>
+                                <p>Visualisieren Sie Ihre Projektstruktur als Baum (Tree View) oder als Grid. Nutzen Sie Vorlagen (Album, Single, Podcast), um Projekte mit vordefinierten Aufgabenlisten zu starten.</p>
                             </div>
                         </div>
                     )}
@@ -90,7 +95,7 @@ const HelpModal = ({ onClose }) => {
                     )}
                 </div>
             </div>
-        </div>
+        </div >
     );
 };
 

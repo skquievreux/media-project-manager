@@ -85,17 +85,29 @@ const Sidebar = ({ projects, activeProject, currentView, onSelectProject, onNavi
                                 <p>Keine Projekte</p>
                             </div>
                         ) : (
-                            projects.map(project => (
-                                <button
-                                    key={project.id}
-                                    className={`sidebar-item ${activeProject?.id === project.id ? 'active' : ''}`}
-                                    onClick={() => onSelectProject(project)}
-                                >
-                                    <FolderIcon size={18} />
-                                    <span>{project.name}</span>
-                                    {project.starred && <span className="star">★</span>}
-                                </button>
-                            ))
+                            projects.map(project => {
+                                // Determine Type Color
+                                const typeConfig = PROJECT_TYPES[project.type];
+                                const typeColor = typeConfig?.color || 'var(--color-text-secondary)';
+
+                                return (
+                                    <button
+                                        key={project.id}
+                                        className={`sidebar-item ${activeProject?.id === project.id ? 'active' : ''}`}
+                                        onClick={() => onSelectProject(project)}
+                                        style={activeProject?.id === project.id ? {
+                                            '--gradient-primary': `linear-gradient(135deg, ${typeColor} 0%, rgba(255,255,255,0.1) 100%)`,
+                                            border: `1px solid ${typeColor}`
+                                        } : {}}
+                                    >
+                                        <span style={{ color: activeProject?.id === project.id ? 'white' : typeColor, display: 'flex' }}>
+                                            <FolderIcon size={18} />
+                                        </span>
+                                        <span>{project.name}</span>
+                                        {project.starred && <span className="star">★</span>}
+                                    </button>
+                                )
+                            })
                         )}
                     </div>
                 </div>

@@ -1,13 +1,21 @@
 import { VideoIcon, ImageIcon, AudioIcon, DocumentIcon, MoreVerticalIcon, EditIcon, TrashIcon, StarIcon } from './Icons';
 import './ProjectCard.css';
 
+import { getProjectType } from '../constants/projectTypes';
+
 const ProjectCard = ({ project, onClick, onEdit, onDelete, onToggleStar }) => {
+    const projectTypeConfig = getProjectType(project.type);
+    const typeColor = projectTypeConfig?.color || 'var(--color-primary)';
+
     const getTypeIcon = (type) => {
+        // Use icon from config if available (it's a string emoji in config, but let's keep using SVG icons here for consistency if preferred, 
+        // OR better: use the config logic or keep specific mapping. 
+        // PROJECT_TYPES has emoji icons. The SVG icons are cleaner. Let's keep SVG mapping but use color from config.
         switch (type) {
-            case 'video': return <VideoIcon size={24} />;
-            case 'image': return <ImageIcon size={24} />;
-            case 'audio': return <AudioIcon size={24} />;
-            case 'document': return <DocumentIcon size={24} />;
+            case 'video': case 'commercial': return <VideoIcon size={24} />;
+            case 'image': case 'cover': return <ImageIcon size={24} />;
+            case 'audio': case 'single': case 'album': case 'podcast': return <AudioIcon size={24} />;
+            case 'document': case 'kinderbuch': return <DocumentIcon size={24} />;
             default: return <DocumentIcon size={24} />;
         }
     };
@@ -22,9 +30,19 @@ const ProjectCard = ({ project, onClick, onEdit, onDelete, onToggleStar }) => {
     };
 
     return (
-        <div className="project-card card" onClick={onClick}>
+        <div
+            className="project-card card"
+            onClick={onClick}
+            style={{ '--hover-border-color': typeColor }}
+        >
             <div className="project-card-header">
-                <div className="project-type-icon" style={{ color: getStatusColor(project.status) }}>
+                <div
+                    className="project-type-icon"
+                    style={{
+                        color: typeColor,
+                        background: `color-mix(in srgb, ${typeColor} 10%, transparent)` // Modern CSS for slight tint
+                    }}
+                >
                     {getTypeIcon(project.type)}
                 </div>
                 <div className="project-actions">
@@ -35,7 +53,7 @@ const ProjectCard = ({ project, onClick, onEdit, onDelete, onToggleStar }) => {
                             onToggleStar(project.id);
                         }}
                     >
-                        <StarIcon size={18} filled={project.starred} />
+                        <StarIcon size={18} filled={project.starred} color={project.starred ? 'var(--color-warning)' : 'currentColor'} />
                     </button>
                     <div className="dropdown">
                         <button className="btn-ghost icon-btn-sm" onClick={(e) => e.stopPropagation()}>
@@ -60,7 +78,9 @@ const ProjectCard = ({ project, onClick, onEdit, onDelete, onToggleStar }) => {
                 <p className="project-description">{project.description}</p>
 
                 <div className="project-meta">
-                    <span className="project-type">{project.type}</span>
+                    <span className="project-type" style={{ color: typeColor, background: `color-mix(in srgb, ${typeColor} 10%, transparent)` }}>
+                        {projectTypeConfig?.label || project.type}
+                    </span>
                     <span className="project-assets">{project.assets?.length || 0} assets</span>
                 </div>
 
@@ -74,7 +94,7 @@ const ProjectCard = ({ project, onClick, onEdit, onDelete, onToggleStar }) => {
                             className="progress-fill"
                             style={{
                                 width: `${project.progress}%`,
-                                background: getStatusColor(project.status)
+                                background: typeColor // Use Type Color for progress bar as requested "use distinct colors everywhere"
                             }}
                         ></div>
                     </div>

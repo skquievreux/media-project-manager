@@ -1,8 +1,8 @@
 # Media Project Manager (MPM)
 
-![Version](https://img.shields.io/badge/version-1.5.4-blue.svg)
+![Version](https://img.shields.io/badge/version-1.5.5-blue.svg)
 ![Electron](https://img.shields.io/badge/Electron-Desktop-orange.svg)
-![Feature](https://img.shields.io/badge/feature-Audio_Visualizer-purple.svg)
+![Feature](https://img.shields.io/badge/feature-Smart%20UI-purple.svg)
 ![Language](https://img.shields.io/badge/language-Deutsch-red.svg)
 
 ## 📄 Über das Projekt
@@ -16,10 +16,16 @@ Das Ziel der Anwendung ist es, die Lücke zwischen Dateisystem (Explorer/Finder)
 *   **Medien-Chaos:** Assets (Bilder, Videos) liegen verstreut in Unterordnern.
 *   **Manuelle Prozesse:** Das Zählen von Tracks oder das Prüfen auf Vorhandensein notwendiger Schritte kostet Zeit.
 
-## 🚀 Hauptfunktionen (v1.5.2)
+## 🚀 Hauptfunktionen (v1.5.5)
 
-### 1. 🪄 Smart Templates & Workflows
-Starten Sie neue Projekte blitzschnell mit vordefinierten Schablonen für verschiedene Medientypen (Single Song, Album, Kinderbuch, Werbespot). Jedes Template enthält automatisch alle notwendigen Tasks und Milestones.
+### 1. 🎨 Smart UI & Design-Konsistenz
+Die gesamte Anwendung folgt nun einem einheitlichen "Smart Template"-Design mit Glassmorphism-Effekten. Projekttypen werden durchgängig farblich kodiert (z.B. Audio = Cyan, Video = Blau) – vom Dashboard-Icon bis zum Fortschrittsbalken und Hover-Glow.
+
+### 2. ⭐ Smart Favorites & Sortierung
+Behalten Sie den Fokus: Favorisierte Projekte werden automatisch priorisiert und erscheinen in allen Listen und Suchergebnissen immer ganz oben.
+
+### 3. 🪄 Smart Templates & Workflows
+Starten Sie neue Projekte blitzschnell mit vordefinierten Schablonen für verschiedene Medientypen (Single Song, Album, Kinderbuch, Werbespot). Jeder Typ hat seine eigene visuelle Identität.
 
 ### 2. 📋 Advanced Task-Tracking
 Verwalten Sie Ihre Aufgaben präzise:

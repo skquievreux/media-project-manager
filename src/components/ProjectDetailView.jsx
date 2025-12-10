@@ -99,6 +99,7 @@ function ProjectDetailView({ project, onBack, onUpdateProject }) {
   const [titleInput, setTitleInput] = useState('');
   const [activeMediaId, setActiveMediaId] = useState(null);
   const [importQueue, setImportQueue] = useState([]);
+  const [isWatcherActive, setIsWatcherActive] = useState(false);
 
   // Asset Management State
   const [assetSearch, setAssetSearch] = useState('');
@@ -188,6 +189,62 @@ function ProjectDetailView({ project, onBack, onUpdateProject }) {
     }
   }, [project.path]);
 
+  // Watcher Logic
+  const toggleWatcher = async () => {
+    if (isWatcherActive) {
+      if (window.electron && window.electron.stopWatcher) {
+        await window.electron.stopWatcher();
+        setIsWatcherActive(false);
+      }
+    } else {
+      // For now, let's hardcode Downloads or ask user. 
+      // User said "Download Watch" so likely Downloads folder.
+      // Ideally select folder.
+      try {
+        if (window.electron && window.electron.selectScanFolder) {
+          const result = await window.electron.selectScanFolder(); // Re-use selection dialog
+          if (result && !result.canceled && result.filePaths.length > 0) {
+            const res = await window.electron.startWatcher(result.filePaths[0]);
+            if (res.success) {
+              setIsWatcherActive(true);
+            } else {
+              alert('Watcher konnte nicht gestartet werden: ' + res.error);
+            }
+          }
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (window.electron && window.electron.onWatcherFileDetected) {
+      window.electron.onWatcherFileDetected((file) => {
+        console.log('Watcher detected:', file);
+        // Add to import queue
+        // We mimic a File object here
+        const fileObj = {
+          name: file.name,
+          path: file.path,
+          size: file.size,
+          type: 'valid/type', // Dropzone logic usually fixes this or we let Dialog handle it
+          uploaded: true // Signal that it's a real file
+        };
+        setImportQueue(prev => {
+          // Avoid duplicates
+          if (prev.find(p => p.path === file.path)) return prev;
+          return [...prev, fileObj];
+        });
+      });
+
+      return () => {
+        window.electron.removeWatcherListener();
+        window.electron.stopWatcher(); // Ensure stop on unmount
+      };
+    }
+  }, []);
+
   function calculateProjectStats() {
     const tasks = project.tasks || [];
     const completed = tasks.filter(t => t.status === 'completed').length;
@@ -245,6 +302,69 @@ function ProjectDetailView({ project, onBack, onUpdateProject }) {
     if (confirm('Asset wirklich löschen?')) {
       const updatedAssets = (project.assets || []).filter(a => a.id !== assetId);
       onUpdateProject({ ...project, assets: updatedAssets });
+    }
+  };
+
+  // ZIP Handling Logic
+  const handleSmartFileDrop = async (files) => {
+    const droppedFiles = Array.from(files);
+    if (droppedFiles.length === 0) return;
+
+    const newQueue = [];
+    const zips = [];
+
+    for (const file of droppedFiles) {
+      // Electron Path handling
+      let path = file.path;
+      // Note: FileDropZone might pass objects that look like files but have .path already
+      if (!path && window.electron && window.electron.getPathForFile) {
+        try { path = window.electron.getPathForFile(file); } catch (e) { }
+      }
+
+      // Check for ZIP
+      if (path && (path.toLowerCase().endsWith('.zip'))) {
+        zips.push({ file, path });
+      } else {
+        newQueue.push(file);
+      }
+    }
+
+    // Process Zips first
+    for (const zip of zips) {
+      if (window.electron && window.electron.processZipUpload) {
+        // We need a target folder. We use project path.
+        let targetBase = project.path || '';
+
+        if (!targetBase) {
+          alert('Bitte speichern Sie das Projekt zuerst, um Zips zu entpacken.');
+          continue;
+        }
+
+        const result = await window.electron.processZipUpload(zip.path, targetBase);
+        if (result.success && result.files) {
+          // Add extracted files to queue
+          // Map them to mimic File objects
+          const extracted = result.files.map(f => ({
+            name: f.name,
+            path: f.path,
+            relativePath: f.relativePath, // Pass it through
+            size: f.size,
+            type: f.name.endsWith('.txt') ? 'text/plain' : 'image/jpeg', // Mock type
+            uploaded: true, // Signal it's real
+            isExtracted: true
+          }));
+          newQueue.push(...extracted);
+        } else {
+          alert(`Zip Fehler: ${result.error}`);
+        }
+      } else {
+        // Fallback if electron not ready
+        newQueue.push(zip.file);
+      }
+    }
+
+    if (newQueue.length > 0) {
+      setImportQueue(prev => [...prev, ...newQueue]);
     }
   };
 
@@ -692,7 +812,7 @@ function ProjectDetailView({ project, onBack, onUpdateProject }) {
             {/* File Drop Zone with Smart Interception */}
             <FileDropZone
               project={project}
-              onFilesDetected={(files) => setImportQueue(Array.from(files))}
+              onFilesDetected={handleSmartFileDrop}
               onFileUpload={(asset) => {
                 const newAsset = { ...asset, addedAt: Date.now() };
                 const updatedAssets = [...(project.assets || []), newAsset];
@@ -701,14 +821,14 @@ function ProjectDetailView({ project, onBack, onUpdateProject }) {
             />
 
             {/* Controls Toolbar */}
-            <div className="assets-controls-toolbar" style={{ display: 'flex', gap: '1rem', marginBottom: '1rem', flexWrap: 'wrap', alignItems: 'center', background: '#2d3748', padding: '1rem', borderRadius: '8px' }}>
+            <div className="assets-controls-toolbar" style={{ display: 'flex', gap: '1rem', marginBottom: '1rem', flexWrap: 'wrap', alignItems: 'center', background: 'var(--color-bg-secondary)', padding: '1rem', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
               <div style={{ flex: 1, position: 'relative' }}>
                 <input
                   type="text"
                   placeholder="🔍 Assets suchen..."
                   value={assetSearch}
                   onChange={(e) => setAssetSearch(e.target.value)}
-                  style={{ width: '100%', padding: '0.5rem 0.5rem 0.5rem 2rem', borderRadius: '4px', border: '1px solid #4a5568', background: '#1a202c', color: 'white' }}
+                  style={{ width: '100%', padding: '0.5rem 0.5rem 0.5rem 2rem', borderRadius: '4px', border: '1px solid var(--color-border)', background: 'var(--color-bg-elevated)', color: 'white' }}
                 />
               </div>
 
@@ -716,7 +836,7 @@ function ProjectDetailView({ project, onBack, onUpdateProject }) {
                 <select
                   value={assetSort.key}
                   onChange={(e) => setAssetSort(prev => ({ ...prev, key: e.target.value }))}
-                  style={{ padding: '0.5rem', borderRadius: '4px', background: '#1a202c', color: 'white', border: '1px solid #4a5568' }}
+                  style={{ padding: '0.5rem', borderRadius: '4px', background: 'var(--color-bg-elevated)', color: 'white', border: '1px solid var(--color-border)' }}
                 >
                   <option value="addedAt">📅 Datum</option>
                   <option value="name">🔤 Name</option>
@@ -725,7 +845,7 @@ function ProjectDetailView({ project, onBack, onUpdateProject }) {
                 </select>
                 <button
                   onClick={() => setAssetSort(prev => ({ ...prev, direction: prev.direction === 'asc' ? 'desc' : 'asc' }))}
-                  style={{ padding: '0.5rem', background: '#4a5568', border: 'none', borderRadius: '4px', cursor: 'pointer', color: 'white' }}
+                  style={{ padding: '0.5rem', background: 'var(--color-bg-elevated)', border: '1px solid var(--color-border)', borderRadius: '4px', cursor: 'pointer', color: 'white' }}
                   title={assetSort.direction === 'asc' ? 'Aufsteigend' : 'Absteigend'}
                 >
                   {assetSort.direction === 'asc' ? '⬆️' : '⬇️'}
@@ -736,6 +856,25 @@ function ProjectDetailView({ project, onBack, onUpdateProject }) {
                   style={{ padding: '0.5rem 1rem', background: isFolderView ? '#3182ce' : '#4a5568', border: 'none', borderRadius: '4px', cursor: 'pointer', color: 'white' }}
                 >
                   {isFolderView ? '📁 Ordner' : '🏗️ Grid'}
+                </button>
+                <div style={{ width: '1px', background: '#4a5568', margin: '0 0.5rem' }}></div>
+                <button
+                  onClick={toggleWatcher}
+                  title={isWatcherActive ? 'Download-Ordner wird überwacht' : 'Download-Überwachung starten'}
+                  style={{
+                    padding: '0.5rem 1rem',
+                    background: isWatcherActive ? '#48bb78' : '#4a5568',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    color: 'white',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem'
+                  }}
+                >
+                  {isWatcherActive ? <span className="pulse-dot" style={{ width: '8px', height: '8px', background: 'white', borderRadius: '50%' }}></span> : '👁️'}
+                  {isWatcherActive ? 'Watch Active' : 'Watch'}
                 </button>
               </div>
             </div>

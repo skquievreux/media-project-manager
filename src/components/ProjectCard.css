@@ -12,13 +12,19 @@
     left: 0;
     right: 0;
     height: 3px;
-    background: var(--gradient-primary);
+    background: var(--hover-border-color, var(--gradient-primary));
     opacity: 0;
     transition: opacity var(--transition-base);
 }
 
 .project-card:hover::before {
     opacity: 1;
+}
+
+.project-card:hover {
+    border-color: var(--hover-border-color, var(--color-border-strong));
+    /* Add slight glow in type color */
+    box-shadow: 0 4px 20px -5px color-mix(in srgb, var(--hover-border-color, transparent) 30%, transparent);
 }
 
 .project-card-header {

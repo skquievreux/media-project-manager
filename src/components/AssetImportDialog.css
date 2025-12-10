@@ -17,6 +17,8 @@
     border-radius: 12px;
     width: 600px;
     max-width: 95%;
+    max-height: 90vh;
+    /* Limit height */
     display: flex;
     flex-direction: column;
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
@@ -72,6 +74,10 @@
     display: flex;
     flex-direction: column;
     gap: 20px;
+    overflow-y: auto;
+    /* Enable scrolling */
+    flex: 1;
+    /* Take up available space */
 }
 
 .file-preview {
