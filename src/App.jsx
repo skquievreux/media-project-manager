@@ -60,8 +60,10 @@ function App() {
   const filteredProjects = projects
     .filter(project => {
       const matchesFilter = filter === 'all' || project.type === filter;
-      const matchesSearch = project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        project.description.toLowerCase().includes(searchQuery.toLowerCase());
+      const name = project.name || '';
+      const desc = project.description || '';
+      const matchesSearch = name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        desc.toLowerCase().includes(searchQuery.toLowerCase());
       return matchesFilter && matchesSearch;
     })
     .sort((a, b) => {

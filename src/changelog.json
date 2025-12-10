@@ -1,6 +1,22 @@
 {
     "versions": [
         {
+            "version": "1.5.6",
+            "date": "2025-12-10",
+            "type": "patch",
+            "title": "Bugfixes: Search & Folder Navigation",
+            "changes": [
+                {
+                    "type": "fix",
+                    "text": "Stabilität: Absturz bei der Suche im Dashboard behoben (Null-Safety für Projektnamen)."
+                },
+                {
+                    "type": "fix",
+                    "text": "Navigation: 'Ordner öffnen' im Projekt-Header funktioniert nun zuverlässig und ist klickbar."
+                }
+            ]
+        },
+        {
             "version": "1.5.5",
             "date": "2025-12-10",
             "type": "patch",

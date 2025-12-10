@@ -369,9 +369,16 @@ function ProjectDetailView({ project, onBack, onUpdateProject }) {
   };
 
   const openFolder = () => {
-    const openFolder = () => {
-      if (folderPath) window.open(`file:///${folderPath}`, '_blank');
-    };
+    if (folderPath) {
+      if (window.electron && window.electron.openPath) {
+        window.electron.openPath(folderPath);
+      } else if (window.electron && window.electron.showItemInFolder) {
+        window.electron.showItemInFolder(folderPath);
+      } else {
+        // Fallback (might be blocked)
+        window.open(`file:///${folderPath}`, '_blank');
+      }
+    }
   };
 
   const getSafeUrl = (url) => {
@@ -764,7 +771,16 @@ function ProjectDetailView({ project, onBack, onUpdateProject }) {
           <div className="project-meta">
             <span className="meta-item">{projectType.label || project.type}</span>
             <span className="meta-item">Erstellt: {formatDate(project.createdAt)}</span>
-            {folderPath && <span className="meta-item folder-path">📁 {folderPath}</span>}
+            {folderPath && (
+              <span
+                className="meta-item folder-path"
+                onClick={openFolder}
+                title="Ordner im Explorer öffnen"
+                style={{ cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: '4px', textDecorationColor: 'rgba(255,255,255,0.3)' }}
+              >
+                📁 {folderPath}
+              </span>
+            )}
           </div>
           {project.description && <p className="project-description">{project.description}</p>}
         </div>
