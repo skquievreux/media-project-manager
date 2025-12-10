@@ -5,34 +5,145 @@ import FileDropZone from './FileDropZone';
 import SmartPrompts from './SmartPrompts';
 import AudioVisualizer from './AudioVisualizer';
 import AssetImportDialog from './AssetImportDialog';
+import FolderStructureView from './FolderStructureView';
+import SmartRenameModal from './SmartRenameModal';
 import './ProjectDetailView.css';
+
+// Sub-Component for individual Asset Card to reduce duplication
+const AssetCard = ({ asset, activeMediaId, setActiveMediaId, onOpenExternal, onRename, onDelete, getSafeUrl, onPreview }) => {
+  const [error, setError] = useState(false);
+
+  // ... error state unchanged ...
+  const handleError = () => setError(true);
+
+  if (error) {
+    // ... error UI unchanged ...
+    return (
+      <div className={`asset-card error ${activeMediaId === asset.id ? 'active' : ''}`}>
+        <div className="asset-preview">
+          <div className="asset-icon-large error-icon" title="Datei nicht gefunden">⚠️</div>
+        </div>
+        <div className="asset-info">
+          <div className="asset-name" title={asset.name}>{asset.name}</div>
+          <div className="asset-meta error-text">Datei nicht gefunden</div>
+        </div>
+        <div className="asset-actions">
+          <button onClick={() => onDelete(asset.id)} title="Löschen">🗑️</button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={`asset-card ${activeMediaId === asset.id ? 'active' : ''}`}>
+      <div className="asset-preview">
+        {asset.type === 'image' && (
+          <img
+            src={getSafeUrl(asset.url)}
+            alt={asset.name}
+            className="asset-preview-img clickable"
+            loading="lazy"
+            onError={handleError}
+            onClick={() => onPreview && onPreview(asset)}
+            style={{ cursor: 'pointer' }}
+          />
+        )}
+        {asset.type === 'video' && (
+          <video
+            src={getSafeUrl(asset.url)}
+            controls
+            className="asset-preview-video"
+            onPlay={() => setActiveMediaId(asset.id)}
+            onError={handleError}
+          />
+        )}
+        {asset.type === 'audio' && (
+          <div className="asset-preview-visualizer">
+            <AudioVisualizer
+              src={getSafeUrl(asset.url)}
+              onPlay={() => setActiveMediaId(asset.id)}
+              onError={handleError}
+            />
+          </div>
+        )}
+        {asset.type !== 'image' && asset.type !== 'video' && asset.type !== 'audio' && (
+          <div className="asset-icon-large">
+            {asset.type === 'document' && '📄'}
+            {asset.type === 'other' && '📦'}
+          </div>
+        )}
+      </div>
+      <div className="asset-info">
+        <div className="asset-name" title={asset.name}>{asset.name}</div>
+        <div className="asset-meta">
+          <span className="asset-date">{new Date(asset.addedAt || Date.now()).toLocaleDateString('de-DE')}</span>
+          {asset.size && <span className="asset-size">{(asset.size / 1024 / 1024).toFixed(2)} MB</span>}
+        </div>
+      </div>
+      <div className="asset-actions">
+        <button onClick={() => onOpenExternal(asset.path || asset.url)} title="Öffnen">📂</button>
+        <button onClick={() => onRename(asset)} title="Bearbeiten / Umbenennen">✏️</button>
+        <button onClick={() => onDelete(asset.id)} title="Löschen">🗑️</button>
+      </div>
+    </div>
+  );
+};
 
 function ProjectDetailView({ project, onBack, onUpdateProject }) {
   const [activeTab, setActiveTab] = useState('tasks');
   const [notes, setNotes] = useState(project.notes || '');
   const [showAddAsset, setShowAddAsset] = useState(false);
+  const [showSmartRename, setShowSmartRename] = useState(false);
   const [promptType, setPromptType] = useState('suno');
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [titleInput, setTitleInput] = useState('');
   const [activeMediaId, setActiveMediaId] = useState(null);
   const [importQueue, setImportQueue] = useState([]);
 
+  // Asset Management State
+  const [assetSearch, setAssetSearch] = useState('');
+  const [assetSort, setAssetSort] = useState({ key: 'addedAt', direction: 'desc' });
+  const [currentPage, setCurrentPage] = useState(1);
+  const [isFolderView, setIsFolderView] = useState(false);
+  const itemsPerPage = 24;
+
   // Debug log to ensure HMR update
   console.log('Rendering ProjectDetailView', { projectId: project.id, isEditingTitle });
 
   const projectType = PROJECT_TYPES[project.projectType] || PROJECT_TYPES[project.type] || {};
   const stats = calculateProjectStats();
+  // Ensure we have a valid folder path, fallback to path if folder is missing
+  const folderPath = project.folder || project.path;
+
+  // Helper for opening files via Electron
+  const [previewAsset, setPreviewAsset] = useState(null);
 
   // Helper for opening files via Electron
   const openExternal = (path) => {
-    if (window.electron && window.electron.openPath) {
-      // Convert media:// back to file path if needed, or just send the raw path
-      const cleanPath = path.replace('media://', '');
+    if (window.electron && window.electron.showItemInFolder) {
+      // Fix Protocol stripping:
+      // media://C:/Users -> C:/Users
+      // media:///C:/Users -> C:/Users
+      const cleanPath = path.replace(/^media:\/\/*/, '');
+      window.electron.showItemInFolder(cleanPath);
+    } else if (window.electron && window.electron.openPath) {
+      const cleanPath = path.replace(/^media:\/\/*/, '');
       window.electron.openPath(cleanPath);
     } else {
       window.open(path, '_blank');
     }
   };
+
+  // Auto-Repair path from description if missing
+  useEffect(() => {
+    if (!project.path && !project.folder && project.description && project.description.startsWith('Importiert aus ')) {
+      const recoveredPath = project.description.substring(15).trim();
+      if (recoveredPath) {
+        console.log('Auto-recovering project path:', recoveredPath);
+        onUpdateProject({ ...project, path: recoveredPath, folder: recoveredPath });
+      }
+    }
+  }, [project]);
 
   // Auto-scan project resources on mount or when path changes
   useEffect(() => {
@@ -138,7 +249,9 @@ function ProjectDetailView({ project, onBack, onUpdateProject }) {
   };
 
   const openFolder = () => {
-    if (project.folder) window.open(`file:///${project.folder}`, '_blank');
+    const openFolder = () => {
+      if (folderPath) window.open(`file:///${folderPath}`, '_blank');
+    };
   };
 
   const getSafeUrl = (url) => {
@@ -173,6 +286,28 @@ function ProjectDetailView({ project, onBack, onUpdateProject }) {
     return clean;
   };
 
+  const handleStartRename = (asset) => {
+    let filePath = asset.url;
+    // Strip media protocol
+    if (filePath.startsWith('media:///')) {
+      filePath = filePath.replace('media:///', '');
+    }
+    // Attempt decoding if URL encoded
+    try { filePath = decodeURIComponent(filePath); } catch (e) { }
+
+    // Normalize slashes for Windows (mocking file system path)
+    filePath = filePath.replace(/\//g, '\\');
+
+    const mockFile = {
+      name: asset.name,
+      path: filePath,
+      size: asset.size || 0,
+      isRenameMode: true,
+      originalAssetId: asset.id
+    };
+    setImportQueue([mockFile]);
+  };
+
   const handleImportSave = async (processedData) => {
     let sourcePath = processedData.originalFile.path;
     // Electron context isolation might strip .path, try to recover it
@@ -183,6 +318,58 @@ function ProjectDetailView({ project, onBack, onUpdateProject }) {
         console.error("Failed to get path via webUtils", e);
       }
     }
+
+    // --- RENAME MODE ---
+    if (processedData.originalFile.isRenameMode) {
+      if (!project.path) return alert("Projekt hat keinen Pfad.");
+
+      const currentProjectPath = project.path.replace(/\\/g, '/');
+      const destinationFolder = `${currentProjectPath}/${processedData.folder}`;
+      const newFilename = processedData.newFilename;
+
+      // Target Path (Full)
+      // Clean double slashes
+      const targetPathFull = `${destinationFolder}/${newFilename}`.replace(/\/\//g, '/');
+
+      // Native System Paths for IPC
+      // sourcePath is already native from handleStartRename
+
+      try {
+        const result = await window.electron.invoke('rename-file', {
+          oldPath: sourcePath,
+          newPath: targetPathFull
+        });
+
+        if (result.success) {
+          // Update Asset in Project State in-place
+          const updatedAssets = project.assets.map(a => {
+            if (a.id === processedData.originalFile.originalAssetId) {
+              return {
+                ...a,
+                name: newFilename,
+                url: 'media:///' + targetPathFull.replace(/\\/g, '/'),
+                // Update type based on new folder category
+                type: (processedData.category === 'audio' ? 'audio' :
+                  processedData.category === 'images' ? 'image' :
+                    processedData.category === 'docs' ? 'document' : 'other')
+              };
+            }
+            return a;
+          });
+
+          onUpdateProject({ ...project, assets: updatedAssets });
+          setImportQueue([]);
+        } else {
+          alert(`Fehler beim Umbenennen: ${result.error}`);
+        }
+      } catch (e) {
+        console.error("Rename Exception", e);
+        alert("Fehler beim Umbenennen.");
+      }
+      return;
+    }
+    // --- END RENAME MODE ---
+
     let currentProjectPath = project.path;
 
     // Ensure we have project path
@@ -263,6 +450,84 @@ function ProjectDetailView({ project, onBack, onUpdateProject }) {
     }
   };
 
+
+
+  // --- ASSET FILTERING & PAGINATION LOGIC ---
+  const getProcessedAssets = () => {
+    let assets = [...(project.assets || [])];
+
+    // Filter
+    if (assetSearch) {
+      const lowerQuery = assetSearch.toLowerCase();
+      assets = assets.filter(a => a.name.toLowerCase().includes(lowerQuery));
+    }
+
+    // Sort
+    assets.sort((a, b) => {
+      let valA = a[assetSort.key];
+      let valB = b[assetSort.key];
+
+      // Handle strings case-insensitive
+      if (typeof valA === 'string') valA = valA.toLowerCase();
+      if (typeof valB === 'string') valB = valB.toLowerCase();
+
+      // Handle null/undefined (push to bottom usually, but depends)
+      if (valA === undefined || valA === null) valA = '';
+      if (valB === undefined || valB === null) valB = '';
+
+      if (valA < valB) return assetSort.direction === 'asc' ? -1 : 1;
+      if (valA > valB) return assetSort.direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+
+    return assets;
+  };
+
+  const processedAssets = getProcessedAssets();
+  const totalPages = Math.ceil(processedAssets.length / itemsPerPage);
+  const currentAssets = processedAssets.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  // Group assets for Folder View
+  const groupedAssets = {};
+  if (isFolderView) {
+    processedAssets.forEach(asset => {
+      let folderName = 'Unsorted';
+      // Try to determine relative folder
+      if (asset.path && folderPath) {
+        // Normalize slashes
+        const pPath = folderPath.replace(/\\/g, '/').replace(/\/$/, '') + '/';
+        const aPath = asset.path.replace(/\\/g, '/');
+
+        if (aPath.startsWith(pPath)) {
+          const rel = aPath.substring(pPath.length);
+          const parts = rel.split('/');
+          if (parts.length > 1) {
+            folderName = parts.slice(0, -1).join('/');
+          } else {
+            folderName = 'Root';
+          }
+        } else {
+          folderName = 'Extern';
+        }
+      } else if (asset.url && asset.url.includes('/')) {
+        // Fallback guess from URL
+        const parts = asset.url.split('/');
+        if (parts.length > 2) folderName = parts[parts.length - 2];
+      }
+
+      if (!groupedAssets[folderName]) groupedAssets[folderName] = [];
+      groupedAssets[folderName].push(asset);
+    });
+  }
+
+  // Reset page when filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [assetSearch, assetSort]);
+
   const circleLength = 2 * Math.PI * 52;
   const progressOffset = circleLength * (1 - stats.progress / 100);
 
@@ -290,7 +555,38 @@ function ProjectDetailView({ project, onBack, onUpdateProject }) {
           }}>
             🪄 Smart Template anwenden
           </button>
-          <button className="btn-folder" onClick={openFolder} disabled={!project.folder}>📁 Ordner öffnen</button>
+          <button className="btn-secondary" onClick={async () => {
+            if (folderPath) {
+              setShowSmartRename(true);
+            } else {
+              if (confirm('Dieses Projekt ist mit keinem Ordner verknüpft. Möchten Sie jetzt einen Ordner auswählen?')) {
+                if (window.electron) {
+                  const result = await window.electron.invoke('select-directory');
+                  if (result && !result.canceled && result.path) {
+                    onUpdateProject({ ...project, path: result.path, folder: result.path });
+                    // Open modal immediately after linking? Maybe better to let user click again to avoid confusion
+                    alert('Ordner verknüpft! Sie können nun "Smart Organize" nutzen.');
+                  }
+                }
+              }
+            }
+          }}>
+            🪄 Smart Organize
+          </button>
+          <button className="btn-folder" onClick={async () => {
+            if (folderPath) {
+              window.open(`file:///${folderPath}`, '_blank');
+            } else {
+              if (window.electron) {
+                const result = await window.electron.invoke('select-directory');
+                if (result && !result.canceled && result.path) {
+                  onUpdateProject({ ...project, path: result.path, folder: result.path });
+                }
+              }
+            }
+          }}>
+            {folderPath ? '📁 Ordner öffnen' : '🔗 Ordner verknüpfen'}
+          </button>
         </div>
       </div>
 
@@ -348,7 +644,7 @@ function ProjectDetailView({ project, onBack, onUpdateProject }) {
           <div className="project-meta">
             <span className="meta-item">{projectType.label || project.type}</span>
             <span className="meta-item">Erstellt: {formatDate(project.createdAt)}</span>
-            {project.folder && <span className="meta-item folder-path">📁 {project.folder}</span>}
+            {folderPath && <span className="meta-item folder-path">📁 {folderPath}</span>}
           </div>
           {project.description && <p className="project-description">{project.description}</p>}
         </div>
@@ -373,6 +669,7 @@ function ProjectDetailView({ project, onBack, onUpdateProject }) {
         <button className={`tab ${activeTab === 'assets' ? 'active' : ''}`} onClick={() => setActiveTab('assets')}>📁 Assets ({(project.assets || []).length})</button>
         <button className={`tab ${activeTab === 'timeline' ? 'active' : ''}`} onClick={() => setActiveTab('timeline')}>📊 Timeline</button>
         <button className={`tab ${activeTab === 'notes' ? 'active' : ''}`} onClick={() => setActiveTab('notes')}>📝 Notizen</button>
+        <button className={`tab ${activeTab === 'structure' ? 'active' : ''}`} onClick={() => setActiveTab('structure')}>🗂️ Struktur</button>
         <button className={`tab ${activeTab === 'prompts' ? 'active' : ''}`} onClick={() => setActiveTab('prompts')}>✨ AI Prompts</button>
         <button className={`tab ${activeTab === 'links' ? 'active' : ''}`} onClick={() => setActiveTab('links')}>🔗 Quick Links</button>
       </div>
@@ -403,6 +700,46 @@ function ProjectDetailView({ project, onBack, onUpdateProject }) {
               }}
             />
 
+            {/* Controls Toolbar */}
+            <div className="assets-controls-toolbar" style={{ display: 'flex', gap: '1rem', marginBottom: '1rem', flexWrap: 'wrap', alignItems: 'center', background: '#2d3748', padding: '1rem', borderRadius: '8px' }}>
+              <div style={{ flex: 1, position: 'relative' }}>
+                <input
+                  type="text"
+                  placeholder="🔍 Assets suchen..."
+                  value={assetSearch}
+                  onChange={(e) => setAssetSearch(e.target.value)}
+                  style={{ width: '100%', padding: '0.5rem 0.5rem 0.5rem 2rem', borderRadius: '4px', border: '1px solid #4a5568', background: '#1a202c', color: 'white' }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <select
+                  value={assetSort.key}
+                  onChange={(e) => setAssetSort(prev => ({ ...prev, key: e.target.value }))}
+                  style={{ padding: '0.5rem', borderRadius: '4px', background: '#1a202c', color: 'white', border: '1px solid #4a5568' }}
+                >
+                  <option value="addedAt">📅 Datum</option>
+                  <option value="name">🔤 Name</option>
+                  <option value="size">💾 Größe</option>
+                  <option value="type">📁 Typ</option>
+                </select>
+                <button
+                  onClick={() => setAssetSort(prev => ({ ...prev, direction: prev.direction === 'asc' ? 'desc' : 'asc' }))}
+                  style={{ padding: '0.5rem', background: '#4a5568', border: 'none', borderRadius: '4px', cursor: 'pointer', color: 'white' }}
+                  title={assetSort.direction === 'asc' ? 'Aufsteigend' : 'Absteigend'}
+                >
+                  {assetSort.direction === 'asc' ? '⬆️' : '⬇️'}
+                </button>
+                <div style={{ width: '1px', background: '#4a5568', margin: '0 0.5rem' }}></div>
+                <button
+                  onClick={() => setIsFolderView(!isFolderView)}
+                  style={{ padding: '0.5rem 1rem', background: isFolderView ? '#3182ce' : '#4a5568', border: 'none', borderRadius: '4px', cursor: 'pointer', color: 'white' }}
+                >
+                  {isFolderView ? '📁 Ordner' : '🏗️ Grid'}
+                </button>
+              </div>
+            </div>
+
             {showAddAsset && (
               <div className="add-asset-form">
                 <input type="text" placeholder="Asset Name" id="asset-name" />
@@ -428,49 +765,79 @@ function ProjectDetailView({ project, onBack, onUpdateProject }) {
                 onCancel={() => setImportQueue([])}
               />
             )}
-            <div className="assets-grid">
-              {(project.assets || []).map(asset => (
-                <div key={asset.id} className={`asset-card ${activeMediaId === asset.id ? 'active' : ''}`}>
-                  <div className="asset-preview">
-                    {asset.type === 'image' && <img src={getSafeUrl(asset.url)} alt={asset.name} className="asset-preview-img" loading="lazy" />}
-                    {asset.type === 'video' && (
-                      <video
-                        src={getSafeUrl(asset.url)}
-                        controls
-                        className="asset-preview-video"
-                        onPlay={() => setActiveMediaId(asset.id)}
-                      />
-                    )}
-                    {asset.type === 'audio' && (
-                      <div className="asset-preview-visualizer">
-                        <AudioVisualizer
-                          src={getSafeUrl(asset.url)}
-                          onPlay={() => setActiveMediaId(asset.id)}
+
+            {isFolderView ? (
+              <div className="assets-folder-view">
+                {Object.entries(groupedAssets).map(([folderName, assets]) => (
+                  <div key={folderName} className="asset-group">
+                    <h4 style={{
+                      color: '#93c5fd',
+                      borderBottom: '1px solid #2d3748',
+                      paddingBottom: '0.5rem',
+                      marginBottom: '1rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem'
+                    }}>
+                      📁 {folderName} <span style={{ fontSize: '0.8em', color: '#64748b' }}>({assets.length})</span>
+                    </h4>
+                    <div className="assets-grid">
+                      {assets.map(asset => (
+                        <AssetCard
+                          key={asset.id}
+                          asset={asset}
+                          activeMediaId={activeMediaId}
+                          setActiveMediaId={setActiveMediaId}
+                          onOpenExternal={openExternal}
+                          onRename={handleStartRename}
+                          onDelete={handleDeleteAsset}
+                          onPreview={setPreviewAsset}
+                          getSafeUrl={getSafeUrl}
                         />
-                      </div>
-                    )}
-                    {asset.type !== 'image' && asset.type !== 'video' && asset.type !== 'audio' && (
-                      <div className="asset-icon-large">
-                        {asset.type === 'document' && '📄'}
-                        {asset.type === 'other' && '📦'}
-                      </div>
-                    )}
-                  </div>
-                  <div className="asset-info">
-                    <div className="asset-name" title={asset.name}>{asset.name}</div>
-                    <div className="asset-meta">
-                      <span className="asset-date">{formatDate(asset.addedAt)}</span>
-                      {asset.size && <span className="asset-size">{formatFileSize(asset.size)}</span>}
+                      ))}
                     </div>
                   </div>
-                  <div className="asset-actions">
-                    <button onClick={() => openExternal(asset.url)}>Öffnen</button>
-                    <button onClick={() => handleDeleteAsset(asset.id)}>🗑️</button>
-                  </div>
-                </div>
-              ))}
-              {(project.assets || []).length === 0 && <div className="empty-state"><span className="empty-icon">📁</span><p>Noch keine Assets hinzugefügt</p></div>}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="assets-grid">
+                {currentAssets.map(asset => (
+                  <AssetCard
+                    key={asset.id}
+                    asset={asset}
+                    activeMediaId={activeMediaId}
+                    setActiveMediaId={setActiveMediaId}
+                    onOpenExternal={openExternal}
+                    onRename={handleStartRename}
+                    onDelete={handleDeleteAsset}
+                    onPreview={setPreviewAsset}
+                    getSafeUrl={getSafeUrl}
+                  />
+                ))}
+                {processedAssets.length === 0 && <div className="empty-state"><span className="empty-icon">📁</span><p>{assetSearch ? 'Keine Assets gefunden' : 'Noch keine Assets hinzugefügt'}</p></div>}
+              </div>
+            )}
+
+            {/* Pagination Controls (Only show in Grid Mode to avoid splitting folders) */}
+            {!isFolderView && totalPages > 1 && (
+              <div className="pagination-controls" style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem', marginTop: '2rem', alignItems: 'center' }}>
+                <button
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage(p => p - 1)}
+                  style={{ padding: '0.5rem 1rem', background: currentPage === 1 ? '#4a5568' : '#3182ce', border: 'none', borderRadius: '4px', cursor: currentPage === 1 ? 'not-allowed' : 'pointer', color: 'white' }}
+                >
+                  ◀ Zurück
+                </button>
+                <span style={{ color: '#cbd5e1' }}>Seite {currentPage} von {totalPages}</span>
+                <button
+                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage(p => p + 1)}
+                  style={{ padding: '0.5rem 1rem', background: currentPage === totalPages ? '#4a5568' : '#3182ce', border: 'none', borderRadius: '4px', cursor: currentPage === totalPages ? 'not-allowed' : 'pointer', color: 'white' }}
+                >
+                  Weiter ▶
+                </button>
+              </div>
+            )}
           </div>
         )}
         {activeTab === 'timeline' && (
@@ -522,7 +889,47 @@ function ProjectDetailView({ project, onBack, onUpdateProject }) {
             </div>
           </div>
         )}
+        {activeTab === 'structure' && (
+          <FolderStructureView project={{ ...project, folder: folderPath }} />
+        )}
       </div>
+
+      {showSmartRename && (
+        <SmartRenameModal
+          project={{ ...project, folder: folderPath }}
+          onClose={() => setShowSmartRename(false)}
+          onFinish={() => {
+            setShowSmartRename(false);
+            // Consider triggering a refresh if needed
+          }}
+        />
+      )}
+
+      {/* Preview Modal */}
+      {previewAsset && (
+        <div className="preview-modal-overlay" onClick={() => setPreviewAsset(null)} style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.85)', zIndex: 9999,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem'
+        }}>
+          <div className="preview-content" onClick={e => e.stopPropagation()} style={{
+            maxWidth: '90vw', maxHeight: '90vh', position: 'relative'
+          }}>
+            <button onClick={() => setPreviewAsset(null)} style={{
+              position: 'absolute', top: '-40px', right: 0,
+              background: 'transparent', border: 'none', color: 'white', fontSize: '2rem', cursor: 'pointer'
+            }}>×</button>
+            <img
+              src={getSafeUrl(previewAsset.url)}
+              alt={previewAsset.name}
+              onClick={() => setPreviewAsset(null)}
+              title="Klicken zum Schließen"
+              style={{ maxWidth: '100%', maxHeight: '85vh', borderRadius: '8px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)', cursor: 'zoom-out' }}
+            />
+            <div style={{ textAlign: 'center', color: 'white', marginTop: '1rem', fontSize: '1.2rem' }}>{previewAsset.name}</div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

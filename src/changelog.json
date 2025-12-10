@@ -1,6 +1,30 @@
 {
     "versions": [
         {
+            "version": "1.5.4",
+            "date": "2025-12-10",
+            "type": "patch",
+            "title": "Asset View & Preview Enhancements",
+            "changes": [
+                {
+                    "type": "feature",
+                    "text": "Asset View: Neuer 'Ordner-Modus' (Folder View) zum Gruppieren von Assets nach Verzeichnisstruktur."
+                },
+                {
+                    "type": "feature",
+                    "text": "Preview: Bild-Vorschau (Lightbox) mit Klick-zum-Schließen Funktion."
+                },
+                {
+                    "type": "fix",
+                    "text": "Explorer Integration: 'Öffnen'-Button zeigt Datei nun im Explorer an statt sie direkt zu öffnen."
+                },
+                {
+                    "type": "fix",
+                    "text": "Import & Rename: Verbesserte Fehlerbehandlung (Fuzzy Search) beim Umbenennen und Ignorieren von Systemordnern beim Scan."
+                }
+            ]
+        },
+        {
             "version": "1.5.3",
             "date": "2025-12-09",
             "type": "patch",

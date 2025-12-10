@@ -1,3 +1,16 @@
+# [1.5.4](https://github.com/skquievreux/media-project-manager/compare/v1.5.3...v1.5.4) (2025-12-10)
+    
+### Features
+
+* **Asset View:** Ordner-Modus für Assets ([Folder View]) implementiert.
+* **Preview:** Lightbox-Vorschau für Bilder mit Click-to-Close.
+* **Explorer Integration:** Dateien im Explorer anzeigen statt direkt öffnen.
+
+### Bug Fixes
+
+* **Import:** Systemordner werden beim Scan ignoriert.
+* **Rename:** Fuzzy Search für robustes Umbenennen.
+
 # [1.5.0](https://github.com/skquievreux/media-project-manager/compare/v1.4.0...v1.5.0) (2025-12-08)
 
 

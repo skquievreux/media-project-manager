@@ -46,19 +46,33 @@ function SettingsModal({ onClose }) {
     }
   };
 
-  const saveApiKey = async (service) => {
-    const key = prompt(`API Key für ${service.name} eingeben:`);
-    if (!key || key.trim() === '') return;
+  const [editingServiceId, setEditingServiceId] = useState(null);
+  const [editValue, setEditValue] = useState('');
+
+  const handleStartEdit = (service) => {
+    setEditingServiceId(service.id);
+    setEditValue(''); // Always start blank for security
+    setError(null);
+    setSuccess(null);
+  };
+
+  const handleSaveApiKey = async (service) => {
+    if (!editValue || editValue.trim() === '') {
+      setError("Bitte einen gültigen API Key eingeben.");
+      return;
+    }
 
     setLoading(true);
     setError(null);
     setSuccess(null);
 
     try {
-      const result = await window.electron.saveApiKey(service.id, key.trim());
+      const result = await window.electron.saveApiKey(service.id, editValue.trim());
       if (result.success) {
         setSuccess(`API Key für ${service.name} gespeichert!`);
         await loadApiKeys();
+        setEditingServiceId(null);
+        setEditValue('');
         setTimeout(() => setSuccess(null), 3000);
       } else {
         setError(result.error || 'Fehler beim Speichern');
@@ -171,38 +185,63 @@ function SettingsModal({ onClose }) {
                 {services.map(service => {
                   const hasKey = hasApiKey(service.id);
                   const keyData = apiKeys.find(k => k.service === service.id);
+                  const isEditing = editingServiceId === service.id;
 
                   return (
-                    <div key={service.id} className="service-card">
+                    <div key={service.id} className={`service-card ${isEditing ? 'editing' : ''}`}>
                       <div className="service-icon">{service.icon}</div>
+
                       <div className="service-info">
                         <div className="service-name">{service.name}</div>
-                        <div className="service-description">{service.description}</div>
-                        {hasKey && keyData && (
-                          <div className="service-meta">
-                            <span className="status-badge">✓ Aktiv</span>
-                            <span className="last-used">
-                              Zuletzt genutzt: {formatDate(keyData.lastUsed)}
-                            </span>
-                          </div>
+                        {isEditing ? (
+                          <input
+                            type="password"
+                            value={editValue}
+                            onChange={e => setEditValue(e.target.value)}
+                            placeholder="API Key einfügen..."
+                            className="api-key-input"
+                            autoFocus
+                          />
+                        ) : (
+                          <>
+                            <div className="service-description">{service.description}</div>
+                            {hasKey && keyData && (
+                              <div className="service-meta">
+                                <span className="status-badge">✓ Aktiv</span>
+                                <span className="last-used">
+                                  Zuletzt genutzt: {formatDate(keyData.lastUsed)}
+                                </span>
+                              </div>
+                            )}
+                          </>
                         )}
                       </div>
+
                       <div className="service-actions">
-                        <button
-                          className={`btn-action ${hasKey ? 'btn-update' : 'btn-add'}`}
-                          onClick={() => saveApiKey(service)}
-                          disabled={loading}
-                        >
-                          {hasKey ? '🔄 Update' : '➕ Hinzufügen'}
-                        </button>
-                        {hasKey && (
-                          <button
-                            className="btn-action btn-delete"
-                            onClick={() => deleteApiKey(service)}
-                            disabled={loading}
-                          >
-                            🗑️ Löschen
-                          </button>
+                        {isEditing ? (
+                          <>
+                            <button className="btn-action btn-save" onClick={() => handleSaveApiKey(service)}>💾 Speichern</button>
+                            <button className="btn-action btn-cancel" onClick={() => setEditingServiceId(null)}>Abbrechen</button>
+                          </>
+                        ) : (
+                          <>
+                            <button
+                              className={`btn-action ${hasKey ? 'btn-update' : 'btn-add'}`}
+                              onClick={() => handleStartEdit(service)}
+                              disabled={loading}
+                            >
+                              {hasKey ? '🔄 Update' : '➕ Hinzufügen'}
+                            </button>
+                            {hasKey && (
+                              <button
+                                className="btn-action btn-delete"
+                                onClick={() => deleteApiKey(service)}
+                                disabled={loading}
+                              >
+                                🗑️ Löschen
+                              </button>
+                            )}
+                          </>
                         )}
                       </div>
                     </div>

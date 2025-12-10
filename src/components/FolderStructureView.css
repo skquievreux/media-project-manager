@@ -1,0 +1,92 @@
+.folder-structure-view {
+    padding: 1rem;
+    color: white;
+    height: 100%;
+    overflow-y: auto;
+}
+
+.folder-tree-container {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    padding: 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 0.9rem;
+}
+
+.folder-structure-item {
+    user-select: none;
+}
+
+.item-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 4px 0;
+    cursor: pointer;
+    transition: background 0.2s;
+    border-radius: 4px;
+}
+
+.item-row:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.item-row.open {
+    font-weight: bold;
+}
+
+.arrow {
+    display: inline-block;
+    width: 14px;
+    font-size: 0.7rem;
+    opacity: 0.7;
+}
+
+.icon {
+    font-size: 1.1em;
+}
+
+.folder-name {
+    color: #e2e8f0;
+}
+
+.file-item-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 4px 0;
+    cursor: pointer;
+    color: #94a3b8;
+    transition: color 0.2s;
+}
+
+.file-item-row:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+}
+
+.file-size {
+    margin-left: auto;
+    font-size: 0.8em;
+    opacity: 0.5;
+    padding-right: 10px;
+}
+
+.root-file {
+    padding-left: 20px;
+}
+
+.loading-indicator,
+.empty-folder {
+    color: #64748b;
+    font-size: 0.85em;
+    padding: 4px 0;
+    font-style: italic;
+}
+
+.error-message {
+    color: #ef4444;
+    font-size: 0.85em;
+}

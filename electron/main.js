@@ -310,33 +310,40 @@ ipcMain.handle('scan-project-resources', async (event, projectPath) => {
 
         const assets = [];
         const assetExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.mp4', '.mov', '.mp3', '.wav', '.pdf', '.txt', '.md'];
+        const ignoredFolders = ['.git', 'node_modules', 'dist', 'build', '.idea', '.vscode', 'tmp', 'temp'];
 
         // Recursive function to scan for assets
         async function scanDir(dir) {
-            const items = await fs.promises.readdir(dir, { withFileTypes: true });
-            for (const item of items) {
-                const fullPath = path.join(dir, item.name);
-                if (item.isDirectory()) {
-                    await scanDir(fullPath);
-                } else {
-                    const ext = path.extname(item.name).toLowerCase();
-                    if (assetExtensions.includes(ext)) {
-                        // Determine type based on extension
-                        let type = 'document';
-                        if (['.jpg', '.jpeg', '.png', '.gif'].includes(ext)) type = 'image';
-                        if (['.mp4', '.mov'].includes(ext)) type = 'video';
-                        if (['.mp3', '.wav'].includes(ext)) type = 'audio';
+            try {
+                const items = await fs.promises.readdir(dir, { withFileTypes: true });
+                for (const item of items) {
+                    const fullPath = path.join(dir, item.name);
 
-                        assets.push({
-                            id: Date.now() + Math.random(),
-                            name: item.name,
-                            type: type,
-                            url: 'media:///' + fullPath.split(path.sep).join('/'), // Standardize URL path
-                            path: fullPath,
-                            size: (await fs.promises.stat(fullPath)).size
-                        });
+                    if (item.isDirectory()) {
+                        if (ignoredFolders.includes(item.name) || item.name.startsWith('.')) continue;
+                        await scanDir(fullPath);
+                    } else {
+                        const ext = path.extname(item.name).toLowerCase();
+                        if (assetExtensions.includes(ext)) {
+                            // Determine type based on extension
+                            let type = 'document';
+                            if (['.jpg', '.jpeg', '.png', '.gif'].includes(ext)) type = 'image';
+                            if (['.mp4', '.mov'].includes(ext)) type = 'video';
+                            if (['.mp3', '.wav'].includes(ext)) type = 'audio';
+
+                            assets.push({
+                                id: Date.now() + Math.random(),
+                                name: item.name,
+                                type: type,
+                                url: 'media:///' + fullPath.split(path.sep).join('/'), // Standardize URL path
+                                path: fullPath,
+                                size: (await fs.promises.stat(fullPath)).size
+                            });
+                        }
                     }
                 }
+            } catch (err) {
+                console.warn(`Skipping scan of ${dir}: ${err.message}`);
             }
         }
 
@@ -357,7 +364,6 @@ ipcMain.handle('import-file', async (event, { sourcePath, destinationFolder, new
         await fs.promises.mkdir(destinationFolder, { recursive: true });
 
         // Copy file (safer than move across drives)
-        // If exact file exists, it will be overwritten or error? copyFile default overwrites.
         await fs.promises.copyFile(sourcePath, destPath);
 
         const stats = await fs.promises.stat(destPath);
@@ -370,6 +376,53 @@ ipcMain.handle('import-file', async (event, { sourcePath, destinationFolder, new
         };
     } catch (error) {
         console.error('Import file failed:', error);
+        return { success: false, error: error.message };
+    }
+});
+
+// IPC Handler for Renaming Files
+ipcMain.handle('rename-file', async (event, { oldPath, newPath }) => {
+    try {
+        console.log(`Attempting rename: "${oldPath}" -> "${newPath}"`);
+
+        // 1. Check if source exists explicitly
+        if (!fs.existsSync(oldPath)) {
+            console.warn(`Rename Source Not Found: "${oldPath}"`);
+
+            // Try to rescue: Check parent folder for similarly named file
+            const parentDir = path.dirname(oldPath);
+            const targetName = path.basename(oldPath);
+
+            if (fs.existsSync(parentDir)) {
+                const siblings = await fs.promises.readdir(parentDir);
+
+                // Case-insensitive match or NFC/NFD normalization match
+                const match = siblings.find(s =>
+                    s.toLowerCase() === targetName.toLowerCase() ||
+                    s.normalize('NFC') === targetName.normalize('NFC') ||
+                    s.normalize('NFD') === targetName.normalize('NFD')
+                );
+
+                if (match) {
+                    const fixedPath = path.join(parentDir, match);
+                    console.log(`Found fuzzy match for source: "${fixedPath}"`);
+                    oldPath = fixedPath; // Use the found path
+                } else {
+                    return { success: false, error: `Quelldatei nicht gefunden: ${targetName} (in ${parentDir})` };
+                }
+            } else {
+                return { success: false, error: `Quellordner nicht gefunden: ${parentDir}` };
+            }
+        }
+
+        // Ensure destination folder exists
+        const destDir = path.dirname(newPath);
+        await fs.promises.mkdir(destDir, { recursive: true });
+
+        await fs.promises.rename(oldPath, newPath);
+        return { success: true };
+    } catch (error) {
+        console.error('Rename file failed detail:', error);
         return { success: false, error: error.message };
     }
 });
@@ -546,4 +599,164 @@ ipcMain.handle('open-path', async (event, filePath) => {
     }
 });
 
+ipcMain.handle('show-item-in-folder', async (event, filePath) => {
+    try {
+        shell.showItemInFolder(filePath);
+        return { success: true };
+    } catch (error) {
+        logError('show-item-in-folder', error.message);
+        return { error: error.message };
+    }
+});
+
+
+ipcMain.handle('read-dir', async (event, dirPath) => {
+    try {
+        if (!fs.existsSync(dirPath)) {
+            return { error: `Directory not found: ${dirPath}` };
+        }
+        const items = await fs.promises.readdir(dirPath, { withFileTypes: true });
+        const result = items.map(item => ({
+            name: item.name,
+            isDirectory: item.isDirectory(),
+            path: path.join(dirPath, item.name),
+            // For files, we could get size, but let's keep it simple for now or do an extra stat call if needed.
+            // Doing stat for every item might be slow for large folders, but helpful.
+            // Let's do it for files.
+        }));
+
+        // Enrich with stats
+        const enriched = await Promise.all(result.map(async (item) => {
+            if (!item.isDirectory) {
+                try {
+                    const stats = await fs.promises.stat(item.path);
+                    return { ...item, size: stats.size, mtime: stats.mtime };
+                } catch (e) {
+                    return item;
+                }
+            }
+            return item;
+        }));
+
+        return { success: true, items: enriched };
+    } catch (error) {
+        logError(`read-dir:${dirPath}`, error.message);
+        return { error: error.message };
+    }
+});
+
+
+ipcMain.handle('analyze-project-structure', async (event, projectPath) => {
+    try {
+        if (!projectPath || typeof projectPath !== 'string') {
+            return { error: 'Invalid project path' };
+        }
+
+        const changes = [];
+        const projectName = path.basename(projectPath).replace(/^(Album|Song|Projekt)-/, '').trim();
+        const maxFiles = 5000; // Safety limit
+        let fileCount = 0;
+
+        async function scan(dir) {
+            if (fileCount >= maxFiles) return;
+
+            try {
+                const items = await fs.promises.readdir(dir, { withFileTypes: true });
+                for (const item of items) {
+                    if (fileCount >= maxFiles) break;
+
+                    // Skip hidden files/folders and node_modules
+                    if (item.name.startsWith('.') || item.name === 'node_modules' || item.name === 'dist') continue;
+
+                    const fullPath = path.join(dir, item.name);
+
+                    if (item.isDirectory()) {
+                        // Skip symlinks to avoid loops
+                        if (item.isSymbolicLink()) continue;
+                        await scan(fullPath);
+                    } else if (item.isFile()) {
+                        fileCount++;
+
+                        const relativeDir = path.relative(projectPath, dir);
+                        const oldName = item.name;
+                        let newName = oldName;
+                        let reason = '';
+
+                        // Logic 1: Track Folders
+                        // If we are in "TRACK_08", ensure file starts with "Track 08 -" or "08 -"
+                        const trackMatch = relativeDir.match(/TRACK_(\d+)/i);
+                        if (trackMatch) {
+                            const trackNum = trackMatch[1];
+                            const prefix = `Track ${trackNum}`;
+                            if (!newName.startsWith('Track') && !newName.startsWith(trackNum)) {
+                                newName = `${prefix} - ${newName}`;
+                                reason = 'Track Prefix missing';
+                            }
+                        }
+                        // Logic 2: Root files
+                        else if (relativeDir === '') {
+                            if (!newName.startsWith(projectName)) {
+                                newName = `${projectName} - ${newName}`;
+                                reason = 'Project Prefix missing';
+                            }
+                        }
+
+                        if (newName !== oldName) {
+                            changes.push({
+                                originalPath: fullPath,
+                                newPath: path.join(dir, newName),
+                                oldName,
+                                newName,
+                                folder: relativeDir || 'Root',
+                                reason
+                            });
+                        }
+                    }
+                }
+            } catch (err) {
+                console.warn(`Scan error in ${dir}:`, err.message);
+                // Continue scanning other directories 
+            }
+        }
+
+        await scan(projectPath);
+
+        if (fileCount >= maxFiles) {
+            console.warn(`Scan limit reached (${maxFiles} files). Scan truncated.`);
+        }
+
+        return { success: true, changes, totalFiles: changes.length };
+    } catch (error) {
+        logError(`analyze-structure:${projectPath}`, error.message);
+        return { error: error.message };
+    }
+});
+
+ipcMain.handle('execute-renames', async (event, changes) => {
+    try {
+        let successCount = 0;
+        let errors = [];
+
+        for (const change of changes) {
+            try {
+                // Ensure target doesn't exist to prevent overwrite? 
+                // For this feature, maybe we skip if exists, or auto-increment?
+                if (fs.existsSync(change.newPath)) {
+                    errors.push(`File exists: ${change.newName}`);
+                    continue;
+                }
+                await fs.promises.rename(change.originalPath, change.newPath);
+                successCount++;
+            } catch (e) {
+                errors.push(`${change.oldName}: ${e.message}`);
+            }
+        }
+        return { success: true, processed: successCount, errors };
+    } catch (error) {
+        return { error: error.message };
+    }
+});
+
 console.log('✅ All IPC handlers registered successfully');
+
+

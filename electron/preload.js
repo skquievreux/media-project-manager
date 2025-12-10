@@ -22,6 +22,7 @@ contextBridge.exposeInMainWorld('electron', {
   downloadFile: (url, savePath) => ipcRenderer.invoke('download-file', url, savePath),
   openFile: (filePath) => ipcRenderer.invoke('open-file', filePath),
   openPath: (path) => ipcRenderer.invoke('open-path', path),
+  showItemInFolder: (path) => ipcRenderer.invoke('show-item-in-folder', path),
 
   // File Utils (Required for File object path access in Renderer)
   getPathForFile: (file) => webUtils.getPathForFile(file),

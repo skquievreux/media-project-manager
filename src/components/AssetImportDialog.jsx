@@ -19,6 +19,9 @@ const AssetImportDialog = ({ files, project, onSave, onCancel }) => {
     const [customName, setCustomName] = useState('');
     const [version, setVersion] = useState(1);
 
+    // Detect Rename Mode
+    const isRenameMode = files[0]?.isRenameMode;
+
     // New Metadata State
     const [acronym, setAcronym] = useState(() => {
         // Initialize acronym from project name (First letters or first 4 chars)
@@ -121,7 +124,7 @@ const AssetImportDialog = ({ files, project, onSave, onCancel }) => {
         <div className="asset-import-dialog-overlay">
             <div className="asset-import-dialog">
                 <div className="dialog-header">
-                    <h2>Smart Import ({currentIndex + 1}/{files.length})</h2>
+                    <h2>{isRenameMode ? 'Smart Rename' : 'Smart Import'} ({currentIndex + 1}/{files.length})</h2>
                     <div className="dialog-steps">
                         {files.map((_, i) => (
                             <div key={i} className={`step-indicator ${i === currentIndex ? 'active' : ''}`} />
@@ -236,7 +239,7 @@ const AssetImportDialog = ({ files, project, onSave, onCancel }) => {
                 <div className="dialog-actions">
                     <button className="btn-cancel" onClick={onCancel}>Abbrechen</button>
                     <button className="btn-import" onClick={handleNext}>
-                        {currentIndex < files.length - 1 ? 'Nächste Datei' : 'Importieren'}
+                        {currentIndex < files.length - 1 ? 'Nächste Datei' : (isRenameMode ? 'Umbenennen' : 'Importieren')}
                     </button>
                 </div>
             </div>

@@ -30,6 +30,8 @@ const Dashboard = ({ projects, onSelectProject, onNewProject, onEditProject, onD
         const newProject = {
             id: Date.now(), // Generate new ID
             name: scannedProject.name, // Use 'name' to match App.jsx
+            path: scannedProject.path,
+            folder: scannedProject.path,
             description: `Importiert aus ${scannedProject.path}`,
             type: scannedProject.type === 'bilder' ? 'image' : scannedProject.type, // Map types
             status: 'active',

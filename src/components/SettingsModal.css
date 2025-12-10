@@ -17,6 +17,7 @@
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -39,6 +40,7 @@
     opacity: 0;
     transform: translateY(30px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -158,6 +160,7 @@
     opacity: 0;
     transform: translateX(-20px);
   }
+
   to {
     opacity: 1;
     transform: translateX(0);
@@ -429,4 +432,49 @@
   .features-list {
     grid-template-columns: 1fr;
   }
+}
+
+/* Editing State */
+.service-card.editing {
+  border-color: #3b82f6;
+  background: #162032;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.api-key-input {
+  width: 100%;
+  padding: 0.75rem;
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  color: #fff;
+  font-family: monospace;
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+  transition: border-color 0.2s;
+}
+
+.api-key-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+.btn-save {
+  background: #10b981;
+  color: white;
+}
+
+.btn-save:hover {
+  background: #059669;
+  transform: scale(1.05);
+}
+
+.btn-cancel {
+  background: #475569;
+  color: white;
+}
+
+.btn-cancel:hover {
+  background: #334155;
 }
