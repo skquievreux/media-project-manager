@@ -1,0 +1,249 @@
+.project-type-selector {
+  padding: 2rem;
+  background: #1e293b;
+  border-radius: 12px;
+  margin-bottom: 2rem;
+}
+
+.selector-title {
+  margin: 0 0 1.5rem 0;
+  color: #e2e8f0;
+  font-size: 1.5rem;
+}
+
+.type-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.type-card {
+  background: #2d3748;
+  border: 2px solid transparent;
+  border-radius: 12px;
+  padding: 1.5rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  position: relative;
+  min-height: 150px;
+}
+
+.type-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+  border-color: var(--type-color) !important;
+}
+
+.type-card.selected {
+  background: #374151;
+  border-color: var(--type-color) !important;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+}
+
+.type-icon {
+  font-size: 3rem;
+  line-height: 1;
+}
+
+.type-label {
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: #e2e8f0;
+  text-align: center;
+}
+
+.type-time {
+  font-size: 0.875rem;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.type-description {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #0f172a;
+  color: #e2e8f0;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  white-space: nowrap;
+  margin-bottom: 0.5rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  z-index: 10;
+  animation: fadeIn 0.2s ease;
+  max-width: 300px;
+  white-space: normal;
+  text-align: center;
+}
+
+.type-description::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: #0f172a;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.type-details {
+  background: #2d3748;
+  border-radius: 12px;
+  padding: 1.5rem;
+  animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.details-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.details-icon {
+  font-size: 2rem;
+}
+
+.details-header h3 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.workflow-preview h4 {
+  margin: 0 0 1rem 0;
+  color: #e2e8f0;
+  font-size: 1.1rem;
+}
+
+.workflow-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.workflow-step {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: #1e293b;
+  border-radius: 8px;
+  transition: background 0.2s;
+}
+
+.workflow-step:hover {
+  background: #334155;
+}
+
+.step-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.step-label {
+  flex: 1;
+  color: #e2e8f0;
+  font-weight: 500;
+}
+
+.step-time {
+  color: #94a3b8;
+  font-size: 0.875rem;
+  flex-shrink: 0;
+}
+
+.step-badge {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.step-badge.automated {
+  background: #10b981;
+  color: white;
+}
+
+.step-badge.waiting {
+  background: #f59e0b;
+  color: white;
+}
+
+.type-metadata {
+  padding: 1rem;
+  background: #1e293b;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.metadata-item {
+  color: #e2e8f0;
+  font-size: 0.9rem;
+}
+
+.metadata-item strong {
+  color: #94a3b8;
+  margin-right: 0.5rem;
+}
+
+.metadata-item code {
+  background: #0f172a;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  color: #3b82f6;
+  font-family: 'Courier New', monospace;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .type-grid {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  }
+  
+  .type-card {
+    padding: 1rem;
+  }
+  
+  .type-icon {
+    font-size: 2rem;
+  }
+  
+  .type-description {
+    max-width: 200px;
+  }
+}
