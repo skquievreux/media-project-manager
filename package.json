@@ -7,9 +7,22 @@
   "scripts": {
     "dev": "vite",
     "electron": "cross-env NODE_ENV=development concurrently \"vite\" \"wait-on tcp:5173 && electron .\"",
+    "electron:dev": "cross-env NODE_ENV=development concurrently -n \"VITE,ELECTRON\" -c \"blue,yellow\" \"vite\" \"wait-on tcp:5173 && electron . --no-sandbox\"",
+    "electron:watch": "cross-env NODE_ENV=development concurrently -n \"VITE,ELECTRON\" -c \"blue,yellow\" \"vite\" \"wait-on tcp:5173 && nodemon --watch electron --exec electron .\"",
+    "start": "npm run electron:dev",
     "build": "vite build",
+    "build:electron": "vite build && electron-builder",
+    "build:electron:win": "vite build && electron-builder --win",
+    "build:electron:mac": "vite build && electron-builder --mac",
+    "build:electron:linux": "vite build && electron-builder --linux",
+    "clean": "rm -rf dist dist-electron node_modules/.vite",
+    "clean:win": "if exist dist rmdir /s /q dist && if exist dist-electron rmdir /s /q dist-electron && if exist node_modules\\.vite rmdir /s /q node_modules\\.vite",
+    "reset": "npm run clean && npm install",
+    "reset:win": "npm run clean:win && npm install",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "lint:fix": "eslint . --fix",
+    "preview": "vite preview",
+    "test": "echo \"Tests coming soon\" && exit 0"
   },
   "dependencies": {
     "react": "^19.2.0",
@@ -24,10 +37,13 @@
     "cross-env": "^10.1.0",
     "electron": "^39.2.4",
     "electron-builder": "^26.0.12",
+    "electron-devtools-installer": "^3.2.0",
     "eslint": "^9.39.1",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.24",
     "globals": "^16.5.0",
+    "nodemon": "^3.1.0",
+    "prettier": "^3.4.2",
     "vite": "^7.2.4",
     "wait-on": "^9.0.3"
   }

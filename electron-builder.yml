@@ -1,0 +1,128 @@
+# Electron Builder Configuration
+# https://www.electron.build/configuration/configuration
+
+appId: com.donkey.media-project-manager
+productName: Media Project Manager
+copyright: Copyright © 2025
+
+# Directories
+directories:
+  buildResources: build
+  output: dist-electron
+
+# Files to include
+files:
+  - dist/**/*
+  - electron/**/*
+  - package.json
+  - '!**/.vscode/*'
+  - '!**/src/*'
+  - '!**/scripts/*'
+  - '!**/.git/*'
+  - '!**/.env*'
+  - '!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}'
+  - '!**/node_modules/*/{test,__tests__,tests,powered-test,example,examples}'
+  - '!**/node_modules/*.d.ts'
+  - '!**/node_modules/.bin'
+  - '!**/*.{iml,o,hprof,orig,pyc,pyo,rbc,swp,csproj,sln,xproj}'
+  - '!.editorconfig'
+  - '!**/._*'
+  - '!**/{.DS_Store,.git,.hg,.svn,CVS,RCS,SCCS,.gitignore,.gitattributes}'
+  - '!**/{__pycache__,thumbs.db,.flowconfig,.idea,.vs,.nyc_output}'
+  - '!**/{appveyor.yml,.travis.yml,circle.yml}'
+  - '!**/{npm-debug.log,yarn.lock,.yarn-integrity,.yarn-metadata.json}'
+
+# Asar archive (compression)
+asar: true
+asarUnpack:
+  - '**/*.node'
+
+# Compression level (store = no compression, normal = default, maximum = best compression)
+compression: normal
+
+# Production dependencies only
+npmRebuild: true
+nodeGypRebuild: false
+
+# Windows Configuration
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+        - ia32
+    - target: portable
+      arch:
+        - x64
+  icon: build/icon.ico
+  artifactName: ${productName}-${version}-${arch}.${ext}
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  installerIcon: build/icon.ico
+  uninstallerIcon: build/icon.ico
+  installerHeaderIcon: build/icon.ico
+  createDesktopShortcut: always
+  createStartMenuShortcut: true
+  shortcutName: ${productName}
+  perMachine: false
+  runAfterFinish: true
+
+# macOS Configuration
+mac:
+  target:
+    - target: dmg
+      arch:
+        - x64
+        - arm64
+    - target: zip
+      arch:
+        - x64
+        - arm64
+  icon: build/icon.icns
+  category: public.app-category.productivity
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
+  artifactName: ${productName}-${version}-${arch}.${ext}
+
+dmg:
+  contents:
+    - x: 130
+      y: 220
+    - x: 410
+      y: 220
+      type: link
+      path: /Applications
+  artifactName: ${productName}-${version}.${ext}
+
+# Linux Configuration
+linux:
+  target:
+    - target: AppImage
+      arch:
+        - x64
+    - target: deb
+      arch:
+        - x64
+    - target: rpm
+      arch:
+        - x64
+  icon: build/icon.png
+  category: Office
+  synopsis: Professional media project management tool
+  description: Manage audio, video, and image projects with ease
+  artifactName: ${productName}-${version}-${arch}.${ext}
+
+appImage:
+  license: UNLICENSED
+
+# Publish Configuration (optional - for auto-updates)
+publish:
+  provider: github
+  owner: skquievreux
+  repo: media-project-manager
+  releaseType: release
+  publishAutoUpdate: true

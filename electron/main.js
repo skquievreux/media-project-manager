@@ -72,7 +72,18 @@ async function createWindow() {
     }
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
+    // Install React DevTools in development mode
+    if (process.env.NODE_ENV === 'development') {
+        try {
+            const { default: installExtension, REACT_DEVELOPER_TOOLS } = await import('electron-devtools-installer');
+            await installExtension(REACT_DEVELOPER_TOOLS);
+            console.log('✅ React DevTools installed');
+        } catch (err) {
+            console.log('⚠️  Failed to install React DevTools:', err.message);
+        }
+    }
+
     createWindow();
 
     app.on('activate', () => {

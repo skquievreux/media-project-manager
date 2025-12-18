@@ -51,23 +51,96 @@ Wir haben Workflows eingerichtet, um die Qualität sicherzustellen:
 1.  **CI (Continuous Integration):** Bei jedem Push auf einen Feature-Branch oder Pull Request wird der Code automatisch gebaut (`npm run build`), um Fehler frühzeitig zu erkennen.
 2.  **Release:** Beim Erstellen eines Tags (z.B. `v1.2.0`) kann optional ein Release-Build angestoßen werden.
 
-## 🚀 Installation & Setup
+## ⚡ Quick Start
 
-1.  **Repository klonen:**
-    ```bash
-    git clone https://github.com/skquievreux/media-project-manager.git
-    cd media-project-manager
-    ```
+```bash
+# Clone repository
+git clone https://github.com/skquievreux/media-project-manager.git
+cd media-project-manager
 
-2.  **Abhängigkeiten installieren:**
-    ```bash
-    npm install
-    ```
+# Install dependencies
+npm install
 
-3.  **App starten:**
-    ```bash
-    npm run electron
-    ```
+# Start app (fastest method!)
+npm start
+```
+
+Das war's! Die App öffnet sich automatisch mit Hot Reload.
+
+## 🚀 Development Setup
+
+### Empfohlene Methode
+
+**Mac/Linux:**
+```bash
+./scripts/dev.sh
+```
+
+**Windows:**
+```cmd
+scripts\dev.bat
+```
+
+Diese Scripts prüfen automatisch Dependencies und starten die App mit farbigen Console-Logs.
+
+### Alternative Methoden
+
+```bash
+# Quick Start (empfohlen)
+npm start
+
+# Mit farbigen Logs
+npm run electron:dev
+
+# Mit Auto-Restart (für electron/ Änderungen)
+npm run electron:watch
+
+# Nur Vite (ohne Electron)
+npm run dev
+```
+
+### VS Code Debugging
+
+Drücke `F5` in VS Code um die App mit Debugger zu starten.
+
+### Environment Variables
+
+Kopiere `.env.local.example` zu `.env.local` und passe die Werte an:
+```bash
+cp .env.local.example .env.local
+```
+
+## 🔧 Production Build
+
+```bash
+# Build für aktuelle Plattform
+npm run build:electron
+
+# Build für spezifische Plattform
+npm run build:electron:win    # Windows
+npm run build:electron:mac    # macOS
+npm run build:electron:linux  # Linux
+```
+
+Builds werden im `dist-electron` Ordner erstellt.
+
+## 🧹 Troubleshooting
+
+Bei Problemen:
+
+```bash
+# Mac/Linux
+./scripts/reset.sh
+
+# Windows
+scripts\reset.bat
+
+# Oder manuell
+npm run clean
+npm install
+```
+
+Mehr Details: [scripts/README.md](scripts/README.md)
 
 ## 🤝 Mitwirken
 
