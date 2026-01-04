@@ -20,6 +20,9 @@ jobs:
 
       - name: Install Dependencies
         run: npm install
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build React App
         run: npm run build

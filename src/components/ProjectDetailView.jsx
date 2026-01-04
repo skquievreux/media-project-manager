@@ -5,7 +5,92 @@ import FileDropZone from './FileDropZone';
 import SmartPrompts from './SmartPrompts';
 import AudioVisualizer from './AudioVisualizer';
 import './ProjectDetailView.css';
+import TextFileViewer from './TextFileViewer';
 
+// Sub-Component for individual Asset Card to reduce duplication
+const AssetCard = ({ asset, activeMediaId, setActiveMediaId, onOpenExternal, onRename, onDelete, getSafeUrl, onPreview }) => {
+  const [error, setError] = useState(false);
+
+  // ... error state unchanged ...
+  const handleError = () => setError(true);
+
+  if (error) {
+    // ... error UI unchanged ...
+    return (
+      <div className={`asset-card error ${activeMediaId === asset.id ? 'active' : ''}`}>
+        <div className="asset-preview">
+          <div className="asset-icon-large error-icon" title="Datei nicht gefunden">⚠️</div>
+        </div>
+        <div className="asset-info">
+          <div className="asset-name" title={asset.name}>{asset.name}</div>
+          <div className="asset-meta error-text">Datei nicht gefunden</div>
+        </div>
+        <div className="asset-actions">
+          <button onClick={() => onDelete(asset.id)} title="Löschen">🗑️</button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={`asset-card ${activeMediaId === asset.id ? 'active' : ''}`}>
+      <div className="asset-preview">
+        {asset.type === 'image' && (
+          <img
+            src={getSafeUrl(asset.url)}
+            alt={asset.name}
+            className="asset-preview-img clickable"
+            loading="lazy"
+            onError={handleError}
+            onClick={() => onPreview && onPreview(asset)}
+            style={{ cursor: 'pointer' }}
+          />
+        )}
+        {asset.type === 'video' && (
+          <video
+            src={getSafeUrl(asset.url)}
+            controls
+            className="asset-preview-video"
+            onPlay={() => setActiveMediaId(asset.id)}
+            onError={handleError}
+          />
+        )}
+        {asset.type === 'audio' && (
+          <div className="asset-preview-visualizer">
+            <AudioVisualizer
+              src={getSafeUrl(asset.url)}
+              onPlay={() => setActiveMediaId(asset.id)}
+              onError={handleError}
+            />
+          </div>
+        )}
+        {asset.type !== 'image' && asset.type !== 'video' && asset.type !== 'audio' && (
+          <div
+            className="asset-icon-large"
+            style={{ cursor: 'pointer' }}
+            onClick={() => onPreview && onPreview(asset)}
+            title="Klicken für Vorschau"
+          >
+            {asset.type === 'document' && '📄'}
+            {asset.type === 'other' && '📦'}
+          </div>
+        )}
+      </div>
+      <div className="asset-info">
+        <div className="asset-name" title={asset.name}>{asset.name}</div>
+        <div className="asset-meta">
+          <span className="asset-date">{new Date(asset.addedAt || Date.now()).toLocaleDateString('de-DE')}</span>
+          {asset.size && <span className="asset-size">{(asset.size / 1024 / 1024).toFixed(2)} MB</span>}
+        </div>
+      </div>
+      <div className="asset-actions">
+        <button onClick={() => onOpenExternal(asset.path || asset.url)} title="Öffnen">📂</button>
+        <button onClick={() => onRename(asset)} title="Bearbeiten / Umbenennen">✏️</button>
+        <button onClick={() => onDelete(asset.id)} title="Löschen">🗑️</button>
+      </div>
+    </div>
+  );
+};
 function ProjectDetailView({ project, onBack, onUpdateProject }) {
   const [activeTab, setActiveTab] = useState('tasks');
   const [notes, setNotes] = useState(project.notes || '');
@@ -13,6 +98,7 @@ function ProjectDetailView({ project, onBack, onUpdateProject }) {
   const [promptType, setPromptType] = useState('suno');
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [titleInput, setTitleInput] = useState('');
+  const [previewAsset, setPreviewAsset] = useState(null);
   const [activeMediaId, setActiveMediaId] = useState(null);
 
   // Debug log to ensure HMR update
@@ -53,13 +139,16 @@ function ProjectDetailView({ project, onBack, onUpdateProject }) {
               if (existing.url !== scannedAsset.url) {
                 const index = mergedAssets.findIndex(a => a.name === scannedAsset.name);
                 if (index !== -1) {
+                  // Keep existing ID to preserve React keys
                   mergedAssets[index] = { ...existing, url: scannedAsset.url };
                   hasChanges = true;
                 }
               }
             } else {
-              // Add new asset
-              mergedAssets.push(scannedAsset);
+              // Add new asset - ensure ID is unique
+              // Use timestamp + random to avoid collisions during rapid scans
+              const newId = Date.now() + Math.floor(Math.random() * 10000);
+              mergedAssets.push({ ...scannedAsset, id: newId });
               hasChanges = true;
             }
           });
@@ -74,48 +163,6 @@ function ProjectDetailView({ project, onBack, onUpdateProject }) {
       });
     }
   }, [project.path]);
-
-  function calculateProjectStats() {
-    const tasks = project.tasks || [];
-    const completed = tasks.filter(t => t.status === 'completed').length;
-    const total = tasks.length;
-    const progress = total > 0 ? Math.round((completed / total) * 100) : 0;
-
-    const totalEstimated = tasks.reduce((sum, t) => sum + (t.estimatedTime || 0), 0);
-    const totalActual = tasks.filter(t => t.status === 'completed').reduce((sum, t) => sum + (t.actualTime || 0), 0);
-
-    return {
-      progress,
-      completed,
-      total,
-      totalEstimated,
-      totalActual,
-      efficiency: totalActual > 0 ? Math.round((totalEstimated / totalActual) * 100) : 100
-    };
-  }
-
-  const formatDate = (timestamp) => {
-    return new Date(timestamp).toLocaleDateString('de-DE', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric'
-    });
-  };
-
-  const formatTime = (minutes) => {
-    if (minutes >= 60) {
-      const hours = Math.floor(minutes / 60);
-      const mins = minutes % 60;
-      return mins > 0 ? `${hours}h ${mins}min` : `${hours}h`;
-    }
-    return `${minutes}min`;
-  };
-
-  const formatFileSize = (bytes) => {
-    if (!bytes) return '';
-    const mb = bytes / (1024 * 1024);
-    return `${mb.toFixed(2)} MB`;
-  };
 
   const handleSaveNotes = () => {
     onUpdateProject({ ...project, notes });
@@ -136,7 +183,13 @@ function ProjectDetailView({ project, onBack, onUpdateProject }) {
   };
 
   const openFolder = () => {
-    if (project.folder) window.open(`file:///${project.folder}`, '_blank');
+    if (project.folder) {
+      if (window.electron && window.electron.openPath) {
+        window.electron.openPath(project.folder);
+      } else {
+        window.open(`file:///${project.folder}`, '_blank');
+      }
+    }
   };
 
   const getSafeUrl = (url) => {
@@ -171,11 +224,57 @@ function ProjectDetailView({ project, onBack, onUpdateProject }) {
     return clean;
   };
 
+  const formatDate = (timestamp) => {
+    return new Date(timestamp).toLocaleDateString('de-DE', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+  };
+
+  const formatTime = (minutes) => {
+    if (minutes >= 60) {
+      const hours = Math.floor(minutes / 60);
+      const mins = minutes % 60;
+      return mins > 0 ? `${hours}h ${mins}min` : `${hours}h`;
+    }
+    return `${minutes}min`;
+  };
+
+  const formatFileSize = (bytes) => {
+    if (!bytes) return '';
+    const mb = bytes / (1024 * 1024);
+    return `${mb.toFixed(2)} MB`;
+  };
+
   const circleLength = 2 * Math.PI * 52;
   const progressOffset = circleLength * (1 - stats.progress / 100);
 
+  function calculateProjectStats() {
+    const tasks = project.tasks || [];
+    const completed = tasks.filter(t => t.status === 'completed').length;
+    const total = tasks.length;
+    const progress = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+    const totalEstimated = tasks.reduce((sum, t) => sum + (t.estimatedTime || 0), 0);
+    const totalActual = tasks.filter(t => t.status === 'completed').reduce((sum, t) => sum + (t.actualTime || 0), 0);
+
+    return {
+      progress,
+      completed,
+      total,
+      totalEstimated,
+      totalActual,
+      efficiency: totalActual > 0 ? Math.round((totalEstimated / totalActual) * 100) : 100
+    };
+  }
+
+  // Re-define handlers to match AssetCard props
+  const handlePreview = (asset) => setPreviewAsset(asset);
+
   return (
     <div className="project-detail-view">
+      {/* ... keeping header and hero section ... */}
       <div className="detail-header">
         <button className="btn-back" onClick={onBack}>← Zurück</button>
         <div className="header-actions">
@@ -294,17 +393,16 @@ function ProjectDetailView({ project, onBack, onUpdateProject }) {
               <button className="btn-add-asset" onClick={() => setShowAddAsset(true)}>+ Asset hinzufügen</button>
             </div>
 
-            {/* Smart Prompts Integration in Assets */}
             <div className="assets-prompts-section">
               <SmartPrompts project={project} type="suno" />
             </div>
 
-            {/* File Drop Zone */}
             <FileDropZone
               project={project}
-              onFileUpload={(asset) => {
-                const newAsset = { ...asset, addedAt: Date.now() };
-                const updatedAssets = [...(project.assets || []), newAsset];
+              onFilesAdded={(newAssets) => {
+                const assetsWithDate = newAssets.map(a => ({ ...a, addedAt: Date.now() }));
+                // Prepend new assets so they appear first
+                const updatedAssets = [...assetsWithDate, ...(project.assets || [])];
                 onUpdateProject({ ...project, assets: updatedAssets });
               }}
             />
@@ -324,47 +422,30 @@ function ProjectDetailView({ project, onBack, onUpdateProject }) {
                 <button onClick={() => setShowAddAsset(false)}>Abbrechen</button>
               </div>
             )}
+
             <div className="assets-grid">
-              {(project.assets || []).map(asset => (
-                <div key={asset.id} className={`asset-card ${activeMediaId === asset.id ? 'active' : ''}`}>
-                  <div className="asset-preview">
-                    {asset.type === 'image' && <img src={getSafeUrl(asset.url)} alt={asset.name} className="asset-preview-img" loading="lazy" />}
-                    {asset.type === 'video' && (
-                      <video
-                        src={getSafeUrl(asset.url)}
-                        controls
-                        className="asset-preview-video"
-                        onPlay={() => setActiveMediaId(asset.id)}
-                      />
-                    )}
-                    {asset.type === 'audio' && (
-                      <div className="asset-preview-visualizer">
-                        <AudioVisualizer
-                          src={getSafeUrl(asset.url)}
-                          onPlay={() => setActiveMediaId(asset.id)}
-                        />
-                      </div>
-                    )}
-                    {asset.type !== 'image' && asset.type !== 'video' && asset.type !== 'audio' && (
-                      <div className="asset-icon-large">
-                        {asset.type === 'document' && '📄'}
-                        {asset.type === 'other' && '📦'}
-                      </div>
-                    )}
-                  </div>
-                  <div className="asset-info">
-                    <div className="asset-name" title={asset.name}>{asset.name}</div>
-                    <div className="asset-meta">
-                      <span className="asset-date">{formatDate(asset.addedAt)}</span>
-                      {asset.size && <span className="asset-size">{formatFileSize(asset.size)}</span>}
-                    </div>
-                  </div>
-                  <div className="asset-actions">
-                    <button onClick={() => openExternal(asset.url)}>Öffnen</button>
-                    <button onClick={() => handleDeleteAsset(asset.id)}>🗑️</button>
-                  </div>
-                </div>
-              ))}
+              {(project.assets || [])
+                .sort((a, b) => (b.addedAt || 0) - (a.addedAt || 0)) // Newest first
+                .map(asset => (
+                  <AssetCard
+                    key={asset.id}
+                    asset={asset}
+                    activeMediaId={activeMediaId}
+                    setActiveMediaId={setActiveMediaId}
+                    onOpenExternal={openExternal}
+                    onRename={(a) => {
+                      // Fallback simple rename since SmartRename is missing
+                      const newName = prompt("Neuer Name:", a.name);
+                      if (newName && newName !== a.name) {
+                        const updatedAssets = project.assets.map(pa => pa.id === a.id ? { ...pa, name: newName } : pa);
+                        onUpdateProject({ ...project, assets: updatedAssets });
+                      }
+                    }}
+                    onDelete={handleDeleteAsset}
+                    getSafeUrl={getSafeUrl}
+                    onPreview={handlePreview}
+                  />
+                ))}
               {(project.assets || []).length === 0 && <div className="empty-state"><span className="empty-icon">📁</span><p>Noch keine Assets hinzugefügt</p></div>}
             </div>
           </div>
@@ -419,7 +500,47 @@ function ProjectDetailView({ project, onBack, onUpdateProject }) {
           </div>
         )}
       </div>
-    </div>
+
+
+
+      {/* Preview Modal */}
+      {/* Preview Modal */}
+      {previewAsset && (
+        <>
+          {previewAsset.type === 'image' ? (
+            <div className="preview-modal-overlay" onClick={() => setPreviewAsset(null)} style={{
+              position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+              background: 'rgba(0,0,0,0.85)', zIndex: 9999,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem'
+            }}>
+              <div className="preview-content" onClick={e => e.stopPropagation()} style={{
+                maxWidth: '90vw', maxHeight: '90vh', position: 'relative'
+              }}>
+                <button onClick={() => setPreviewAsset(null)} style={{
+                  position: 'absolute', top: '-40px', right: 0,
+                  background: 'transparent', border: 'none', color: 'white', fontSize: '2rem', cursor: 'pointer'
+                }}>×</button>
+                <img
+                  src={getSafeUrl(previewAsset.url)}
+                  alt={previewAsset.name}
+                  onClick={() => setPreviewAsset(null)}
+                  title="Klicken zum Schließen"
+                  style={{ maxWidth: '100%', maxHeight: '85vh', borderRadius: '8px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)', cursor: 'zoom-out' }}
+                />
+                <div style={{ textAlign: 'center', color: 'white', marginTop: '1rem', fontSize: '1.2rem' }}>{previewAsset.name}</div>
+              </div>
+            </div>
+          ) : (
+            /* Fallback to Text Viewer for everything else (assuming text) */
+            <TextFileViewer
+              url={previewAsset.url}
+              name={previewAsset.name}
+              onClose={() => setPreviewAsset(null)}
+            />
+          )}
+        </>
+      )}
+    </div >
   );
 }
 

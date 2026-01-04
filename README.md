@@ -1,6 +1,6 @@
 # Media Project Manager (MPM)
 
-![Version](https://img.shields.io/badge/version-1.5.2-blue.svg)
+![Version](https://img.shields.io/badge/version-1.6.2-blue.svg)
 ![Electron](https://img.shields.io/badge/Electron-Desktop-orange.svg)
 ![Feature](https://img.shields.io/badge/feature-Audio_Visualizer-purple.svg)
 ![Language](https://img.shields.io/badge/language-Deutsch-red.svg)
@@ -16,7 +16,7 @@ Das Ziel der Anwendung ist es, die Lücke zwischen Dateisystem (Explorer/Finder)
 *   **Medien-Chaos:** Assets (Bilder, Videos) liegen verstreut in Unterordnern.
 *   **Manuelle Prozesse:** Das Zählen von Tracks oder das Prüfen auf Vorhandensein notwendiger Schritte kostet Zeit.
 
-## 🚀 Hauptfunktionen (v1.5.2)
+## 🚀 Hauptfunktionen (v1.6.2)
 
 ### 1. 🪄 Smart Templates & Workflows
 Starten Sie neue Projekte blitzschnell mit vordefinierten Schablonen für verschiedene Medientypen (Single Song, Album, Kinderbuch, Werbespot). Jedes Template enthält automatisch alle notwendigen Tasks und Milestones.
@@ -35,6 +35,12 @@ Die App arbeitet nahtlos mit Ihrer bestehenden Ordnerstruktur zusammen. Sie erke
 *   **Lokaler Zugriff:** Basiert auf Electron für direkten, performanten Zugriff auf die Festplatte.
 *   **Asset-Scan:** Automatische Indizierung von Medien (JPG, MP3, MP4) im Projektordner.
 *   **Inline-Editing:** Bearbeiten Sie Projektdetails direkt in der Oberfläche.
+
+### 5. Intelligentes Datei-Management
+*   **Move-Logik:** Dateien werden beim Import automatisch in den Projektordner verschoben, um Quellordner (wie Downloads) sauber zu halten.
+*   **Dashboard-Upload:** Einfaches Drag & Drop direkt auf die Projektkarten in der Übersicht.
+*   **Smart Sorting:** Neueste Assets stehen immer ganz oben in der Liste.
+*   **Multi-Source Scan:** Überwacht automatisch `Downloads` und `Dokumente/MediaProjects`.
 
 ## 🛠️ Technischer Stack
 

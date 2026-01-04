@@ -12,8 +12,10 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "react": "19.0.0",
-    "react-dom": "19.0.0"
+    "@squievreux/ui": "^0.1.1",
+    "adm-zip": "^0.5.16",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
@@ -31,7 +33,16 @@
     "vite": "^7.2.4",
     "wait-on": "^9.0.3"
   },
+  "packageManager": "pnpm@10.11.0",
   "engines": {
-    "node": ">=20.9.0"
+    "node": ">=20.0.0",
+    "pnpm": ">=10.0.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "electron",
+      "electron-builder",
+      "esbuild"
+    ]
   }
 }

@@ -15,7 +15,7 @@ import './FileDropZone.css';
  *
  * Built by Claude for Don Key
  */
-function FileDropZone({ project, task, onFileUpload, onTaskComplete }) {
+function FileDropZone({ project, task, onFileUpload, onFilesAdded, onTaskComplete }) {
   const [isDragging, setIsDragging] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploading, setUploading] = useState(false);
@@ -91,31 +91,73 @@ function FileDropZone({ project, task, onFileUpload, onTaskComplete }) {
     setUploading(true);
     setUploadProgress(0);
 
+    const newAssets = [];
+
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       const fileType = detectFileType(file);
 
       try {
         // Create asset object
-        const asset = {
+        let asset = {
           id: Date.now() + i,
           name: file.name,
           type: fileType,
           size: file.size,
-          file: file,
+          file: file, // Keep file ref for upload if needed
           uploadedAt: Date.now(),
           taskId: task?.id,
-          url: URL.createObjectURL(file)
+          url: URL.createObjectURL(file) // Default generic URL
         };
 
-        // Simulate upload progress
-        for (let progress = 0; progress <= 100; progress += 10) {
-          setUploadProgress(progress);
-          await new Promise(resolve => setTimeout(resolve, 50));
+        // Resolve path: use file.path if available, otherwise try electron helper
+        let filePath = file.path;
+        try {
+          if (!filePath && window.electron && window.electron.getFilePath) {
+            filePath = window.electron.getFilePath(file);
+          }
+        } catch (e) {
+          console.error("Error resolving file path via electron:", e);
         }
 
-        // Call parent handler
-        if (onFileUpload) {
+        console.log('Processing file:', file.name, 'Resolved Path:', filePath);
+        console.log('Project path:', project?.path);
+
+        // If in Electron and project has a path, move the file (cleanup source)
+        if (window.electron && project?.path && filePath) {
+          try {
+            console.log('Attempting to move file...');
+            const result = await window.electron.moveFile(filePath, project.path);
+            console.log('Move result:', result);
+
+            if (result.success) {
+              asset.url = result.url;
+              asset.path = result.path;
+              asset.name = result.name; // Use actual saved name (handle duplicates)
+            } else {
+              console.error('Move failed:', result.error);
+              alert(`Fehler beim Verschieben der Datei: ${result.error}`);
+            }
+          } catch (err) {
+            console.error('Failed to move file:', err);
+            alert(`Exception beim Verschieben: ${err.message}`);
+          }
+        } else {
+          console.warn('Skipping move: Missing electron, project path, or file path.');
+          if (!project?.path) alert("Warnung: Projekt hat keinen Speicherpfad. Datei wird nicht dauerhaft gespeichert.");
+          if (!filePath && window.electron) alert("Warnung: Dateipfad konnte nicht ermittelt werden (Electron limitation).");
+        }
+
+        // Simulate upload progress
+        for (let progress = 0; progress <= 100; progress += 40) {
+          setUploadProgress(progress);
+          await new Promise(resolve => setTimeout(resolve, 30));
+        }
+
+        newAssets.push(asset);
+
+        // Call legacy single file handler if batch handler is missing
+        if (onFileUpload && !onFilesAdded) {
           await onFileUpload(asset);
         }
 
@@ -133,6 +175,11 @@ function FileDropZone({ project, task, onFileUpload, onTaskComplete }) {
         console.error('File upload failed:', error);
         alert(`Upload fehlgeschlagen: ${file.name}`);
       }
+    }
+
+    // Batch update
+    if (onFilesAdded && newAssets.length > 0) {
+      onFilesAdded(newAssets);
     }
 
     setUploading(false);

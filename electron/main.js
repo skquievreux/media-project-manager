@@ -123,7 +123,9 @@ ipcMain.handle('scan-projects', async (event) => {
     try {
         // Get all watch folders
         const defaultDownloads = path.join(app.getPath('home'), 'Downloads');
-        let watchPaths = [defaultDownloads];
+        const defaultDocuments = path.join(app.getPath('documents'), 'MediaProjects');
+
+        let watchPaths = [defaultDocuments, defaultDownloads];
 
         // Load additional folders if they exist
         const watchFoldersJsonPath = path.join(app.getPath('userData'), 'watchFolders.json');
@@ -484,6 +486,168 @@ ipcMain.handle('open-path', async (event, filePath) => {
         return { success: true };
     } catch (error) {
         logError('open-path', error.message);
+        return { error: error.message };
+    }
+});
+
+const getFolderPrefix = (type) => {
+    const map = {
+        'single': 'Song',
+        'album': 'Album',
+        'commercial': 'Commercial',
+        'image': 'Bilder',
+        'video': 'Projekt',
+        'kinderbuch': 'Projekt',
+        'audio': 'Projekt',
+        'document': 'Projekt'
+    };
+    return map[type] || 'Projekt';
+};
+
+ipcMain.handle('create-project-folder', async (event, projectName, projectType) => {
+    try {
+        const documentsPath = app.getPath('documents');
+        const baseDir = path.join(documentsPath, 'MediaProjects');
+
+        if (!fs.existsSync(baseDir)) {
+            fs.mkdirSync(baseDir, { recursive: true });
+        }
+
+        // Sanitize project name
+        const safeName = projectName.replace(/[^a-z0-9\u00C0-\u00FF\s-_]/gi, '').trim();
+        const prefix = getFolderPrefix(projectType);
+        const folderName = `${prefix}-${safeName}`;
+
+        let projectPath = path.join(baseDir, folderName);
+
+        // Ensure uniqueness
+        let counter = 1;
+        while (fs.existsSync(projectPath)) {
+            projectPath = path.join(baseDir, `${folderName} (${counter})`);
+            counter++;
+        }
+
+        if (!fs.existsSync(projectPath)) {
+            fs.mkdirSync(projectPath, { recursive: true });
+
+            // Create standard subfolders
+            const folders = ['ANFORDERUNGEN', 'KONZEPT', 'UMSETZUNG', 'DOKUMENTATION', 'ASSETS'];
+            folders.forEach(f => fs.mkdirSync(path.join(projectPath, f)));
+        }
+
+        return { success: true, path: projectPath };
+    } catch (error) {
+        logError('create-project-folder', error.message);
+        return { error: error.message };
+    }
+});
+
+ipcMain.handle('rename-project-folder', async (event, oldPath, newName, projectType) => {
+    try {
+        if (!fs.existsSync(oldPath)) {
+            return { error: 'Project folder not found' };
+        }
+
+        const baseDir = path.dirname(oldPath);
+        const safeName = newName.replace(/[^a-z0-9\u00C0-\u00FF\s-_]/gi, '').trim();
+
+        const prefix = getFolderPrefix(projectType);
+        const folderName = `${prefix}-${safeName}`;
+
+        let newPath = path.join(baseDir, folderName);
+
+        if (newPath === oldPath) return { success: true, path: oldPath };
+
+        // Ensure uniqueness
+        let counter = 1;
+        while (fs.existsSync(newPath)) {
+            newPath = path.join(baseDir, `${folderName} (${counter})`);
+            counter++;
+        }
+
+        await fs.promises.rename(oldPath, newPath);
+        return { success: true, path: newPath };
+    } catch (error) {
+        logError('rename-project-folder', error.message);
+        return { error: error.message };
+    }
+});
+
+ipcMain.handle('copy-file', async (event, sourcePath, targetFolder) => {
+    try {
+        if (!fs.existsSync(sourcePath)) {
+            return { error: 'Source file not found' };
+        }
+
+        // Ensure assets subdirectory exists
+        const assetsDir = path.join(targetFolder, 'ASSETS');
+        if (!fs.existsSync(assetsDir)) {
+            fs.mkdirSync(assetsDir, { recursive: true });
+        }
+
+        const fileName = path.basename(sourcePath);
+        const targetPath = path.join(assetsDir, fileName);
+
+        // Prevent overwriting? or auto-rename? Let's auto-rename if exists
+        let finalPath = targetPath;
+        if (fs.existsSync(finalPath)) {
+            const ext = path.extname(fileName);
+            const name = path.basename(fileName, ext);
+            finalPath = path.join(assetsDir, `${name}_${Date.now()}${ext}`);
+        }
+
+        await fs.promises.copyFile(sourcePath, finalPath);
+
+        // Return protocol-ready URL
+        // Fix: Use forward slashes for URL and ensure it starts with media:///
+        const mediaUrl = 'media:///' + finalPath.split(path.sep).join('/');
+
+        return { success: true, path: finalPath, url: mediaUrl, name: path.basename(finalPath) };
+    } catch (error) {
+        logError('copy-file', error.message);
+        return { error: error.message };
+    }
+});
+
+ipcMain.handle('move-file', async (event, sourcePath, targetFolder) => {
+    try {
+        if (!fs.existsSync(sourcePath)) {
+            return { error: 'Source file not found' };
+        }
+
+        // Ensure assets subdirectory exists
+        const assetsDir = path.join(targetFolder, 'ASSETS');
+        if (!fs.existsSync(assetsDir)) {
+            fs.mkdirSync(assetsDir, { recursive: true });
+        }
+
+        const fileName = path.basename(sourcePath);
+        const targetPath = path.join(assetsDir, fileName);
+
+        // Prevent overwriting? or auto-rename? Let's auto-rename if exists
+        let finalPath = targetPath;
+        if (fs.existsSync(finalPath)) {
+            const ext = path.extname(fileName);
+            const name = path.basename(fileName, ext);
+            finalPath = path.join(assetsDir, `${name}_${Date.now()}${ext}`);
+        }
+
+        // Copy first
+        await fs.promises.copyFile(sourcePath, finalPath);
+
+        // Then delete source (Move operation)
+        try {
+            await fs.promises.unlink(sourcePath);
+        } catch (unlinkError) {
+            logError('move-file:unlink', unlinkError.message);
+        }
+
+        // Return protocol-ready URL
+        const mediaUrl = 'media:///' + finalPath.split(path.sep).join('/');
+
+        return { success: true, path: finalPath, url: mediaUrl, name: path.basename(finalPath) };
+    } catch (error) {
+        logError('move-file', error.message);
         return { error: error.message };
     }
 });

@@ -6,9 +6,9 @@ import ProjectDetailView from './components/ProjectDetailView';
 import Footer from './components/Footer';
 import HelpModal from './components/HelpModal';
 import SettingsModal from './components/SettingsModal';
-
 import TemplatesView from './components/TemplatesView';
-import { getDefaultTasks } from './constants/projectTypes';
+import EditProjectModal from './components/EditProjectModal'; // Added import
+import { getDefaultTasks, PROJECT_TYPES } from './constants/projectTypes'; // Added PROJECT_TYPES
 import './App.css';
 
 function App() {
@@ -22,6 +22,9 @@ function App() {
   const [showHelp, setShowHelp] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false); // Track if initial load is done
+  const [editingProject, setEditingProject] = useState(null); // Added state
+  const [selectedCategory, setSelectedCategory] = useState('Alle'); // Added state
+  const [isCreating, setIsCreating] = useState(false); // Added state
 
   // Load projects on startup
   useEffect(() => {
@@ -59,8 +62,13 @@ function App() {
   // Filter projects based on type and search query
   const filteredProjects = projects.filter(project => {
     const matchesFilter = filter === 'all' || project.type === filter;
-    const matchesSearch = project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      project.description.toLowerCase().includes(searchQuery.toLowerCase());
+
+    const name = project.name || '';
+    const desc = project.description || '';
+    const query = searchQuery ? searchQuery.toLowerCase() : '';
+
+    const matchesSearch = name.toLowerCase().includes(query) ||
+      desc.toLowerCase().includes(query);
     return matchesFilter && matchesSearch;
   });
 
@@ -95,6 +103,22 @@ function App() {
           counter++;
         }
         newProject.name = uniqueName;
+
+        // Create actual folder on disk
+        if (window.electron && window.electron.createProjectFolder) {
+          try {
+            const result = await window.electron.createProjectFolder(uniqueName, newProject.type || 'document');
+            if (result.success) {
+              newProject.path = result.path;
+              newProject.folder = result.path; // For UI display
+              newProject.isManaged = true; // Mark as managed
+            } else {
+              console.error('Failed to create project folder:', result.error);
+            }
+          } catch (e) {
+            console.error('Error creating project folder:', e);
+          }
+        }
       }
 
       // Ensure basic fields exist if coming from simple template selection
@@ -131,16 +155,56 @@ function App() {
     }
   };
 
-  // Edit project
+  // Edit project - Open Modal
   const handleEditProject = (project) => {
-    const newName = prompt('Neuen Projektnamen eingeben:', project.name);
+    setEditingProject(project);
+  };
+
+  // Save renamed project
+  const handleSaveProjectName = async (project, newName) => {
     if (newName && newName.trim()) {
-      setProjects(projects.map(p =>
-        p.id === project.id ? { ...p, name: newName.trim() } : p
-      ));
-      if (activeProject?.id === project.id) {
-        setActiveProject({ ...activeProject, name: newName.trim() });
+      const cleanName = newName.trim();
+      let updatedProject = { ...project, name: cleanName };
+
+      console.log('Renaming project:', project.name, 'to', cleanName, 'Path:', project.path);
+
+      // Rename folder on disk if managing folders
+      if (window.electron && project.path) {
+        if (!window.electron.renameProjectFolder) {
+          alert("Error: renameProjectFolder function not found in Electron interface. Please restart the application entirely.");
+          console.error("Missing renameProjectFolder in window.electron");
+        } else {
+          try {
+            const projectType = project.type || 'document';
+            const result = await window.electron.renameProjectFolder(project.path, cleanName, projectType);
+
+            if (result.success) {
+              console.log('Folder renamed successfully to:', result.path);
+              updatedProject.path = result.path;
+              updatedProject.folder = result.path;
+            } else {
+              console.error('Rename folder failed result:', result);
+              alert(`Ordner konnte nicht umbenannt werden: ${result.error || 'Unknown error'}`);
+            }
+          } catch (e) {
+            console.error('Rename folder exception:', e);
+            alert(`Fehler beim Umbenennen des Ordners: ${e.message}`);
+          }
+        }
+      } else {
+        if (!project.path) console.warn("Skipping folder rename: No project path defined.");
+        if (!window.electron) console.warn("Skipping folder rename: Not running in Electron.");
       }
+
+      setProjects(projects.map(p =>
+        p.id === project.id ? updatedProject : p
+      ));
+
+      if (activeProject?.id === project.id) {
+        setActiveProject(updatedProject);
+      }
+
+      setEditingProject(null);
     }
   };
 
@@ -266,6 +330,15 @@ function App() {
       </div>
 
       <Footer />
+
+      {/* Edit Project Modal */}
+      {editingProject && (
+        <EditProjectModal
+          project={editingProject}
+          onClose={() => setEditingProject(null)}
+          onSave={handleSaveProjectName}
+        />
+      )}
 
       {/* Help Button fixed in bottom right or integrated elsewhere */}
       <button
