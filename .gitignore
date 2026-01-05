@@ -12,6 +12,19 @@ dist
 dist-ssr
 *.local
 
+# Electron Builder output
+release
+out
+build/win-unpacked
+build/mac
+build/linux-unpacked
+*.exe
+*.dmg
+*.AppImage
+*.deb
+*.rpm
+
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

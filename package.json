@@ -2,16 +2,57 @@
   "name": "media-project-manager",
   "private": true,
   "version": "1.6.1",
+  "description": "Desktop application for managing media production projects",
+  "author": "Quievreux Consulting",
+  "packageManager": "pnpm@10.11.0",
   "type": "module",
   "main": "electron/main.js",
   "scripts": {
     "dev": "vite",
     "electron": "cross-env NODE_ENV=development concurrently \"vite\" \"wait-on tcp:5173 && electron .\"",
     "build": "vite build",
-    "lint": "eslint .",
-    "preview": "vite preview"
+    "lint": "eslint . --max-warnings 0",
+    "lint:fix": "eslint . --fix",
+    "preview": "vite preview",
+    "dist": "pnpm run build && electron-builder",
+    "dist:win": "pnpm run build && electron-builder --win",
+    "dist:portable": "pnpm run build && electron-builder --win portable"
+  },
+  "build": {
+    "appId": "com.squievreux.mediaprojectmanager",
+    "productName": "Media Project Manager",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": "dir",
+      "fileAssociations": [
+        {
+          "ext": "mpm",
+          "name": "Media Project",
+          "description": "Media Project Manager Project File"
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Media Project Manager"
+    },
+    "portable": {
+      "artifactName": "MediaProjectManager-Portable-${version}.exe"
+    }
   },
   "dependencies": {
+    "@squievreux/ui": "^0.1.1",
     "react": "^19.2.3",
     "react-dom": "^19.2.3"
   },
@@ -24,6 +65,7 @@
     "cross-env": "^10.1.0",
     "electron": "^39.2.4",
     "electron-builder": "^26.0.12",
+    "electron-packager": "^17.1.2",
     "eslint": "^9.39.1",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.24",
@@ -32,6 +74,7 @@
     "wait-on": "^9.0.3"
   },
   "engines": {
-    "node": ">=20.9.0"
+    "node": ">=20.9.0",
+    "pnpm": ">=10.0.0"
   }
 }

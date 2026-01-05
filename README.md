@@ -58,6 +58,21 @@ Wir haben Workflows eingerichtet, um die Qualität sicherzustellen:
 
 ## 🚀 Installation & Setup
 
+### Schnellstart (Entwicklung)
+
+**Einfachste Methode - Doppelklick:**
+```
+start-mpm.bat
+```
+Die `.bat`-Datei prüft automatisch Dependencies und startet die App.
+
+**Oder im Terminal:**
+```bash
+npm run electron
+```
+
+### Detaillierte Anleitung
+
 1.  **Repository klonen:**
     ```bash
     git clone https://github.com/skquievreux/media-project-manager.git
@@ -73,6 +88,22 @@ Wir haben Workflows eingerichtet, um die Qualität sicherzustellen:
     ```bash
     npm run electron
     ```
+
+### 📦 Produktive .exe erstellen
+
+Für eine echte Windows-Anwendung ohne Node.js:
+
+```bash
+# Installer + Portable .exe
+npm run dist:win
+
+# Nur Portable .exe
+npm run dist:portable
+```
+
+**Ausgabe:** `release/MediaProjectManager-Portable-1.6.1.exe`
+
+📖 **Ausführliche Build-Anleitung:** Siehe [`docs/BUILD.md`](docs/BUILD.md)
 
 ## 🤝 Mitwirken
 
