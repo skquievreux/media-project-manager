@@ -1,0 +1,12 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: media-project-manager
+  description: |
+    Auftragstool zur Bearbeitung neuer Songs und Alben sowie zum Management von Medien, Screenshots und Ähnlichem.
+  annotations:
+    github.com/project-slug: skquievreux/media-project-manager
+spec:
+  type: service
+  lifecycle: experimental
+  owner: guests
