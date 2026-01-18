@@ -6,6 +6,7 @@ metadata:
     Auftragstool zur Bearbeitung neuer Songs und Alben sowie zum Management von Medien, Screenshots und Ähnlichem.
   annotations:
     github.com/project-slug: skquievreux/media-project-manager
+    backstage.io/techdocs-ref: dir:.
 spec:
   type: service
   lifecycle: experimental
