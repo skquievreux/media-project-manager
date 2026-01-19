@@ -1,5 +1,5 @@
-site_name: MediaProjectManager-Claude
-site_description: Documentation for MediaProjectManager-Claude
+site_name: MediaProjectManager
+site_description: Documentation for MediaProjectManager
 docs_dir: docs
 
 nav:
