@@ -1,3 +1,3 @@
 # Documentation
 
-Welcome to the documentation for MediaProjectManager.
+Welcome to the documentation for MediaProjectManager-Claude.
