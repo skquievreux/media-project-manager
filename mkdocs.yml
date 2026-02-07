@@ -1,16 +1,16 @@
-site_name: MediaProjectManager-Claude
-site_description: Documentation for MediaProjectManager-Claude
+site_name: MediaProjectManager
+site_description: Documentation for MediaProjectManager
 docs_dir: docs
 
 nav:
   - Home: index.md
   - Architecture:
     - Overview: 01-architecture/index.md
-
+    - Smart_Import_Concept: 01-architecture/smart_import_concept.md
     - Decisions: 01-architecture/decisions/
   - Implementation:
     - Overview: 02-implementation/index.md
-
+    - Api_Integration: 02-implementation/API_INTEGRATION.md
   - Operations:
     - Overview: 03-operations/index.md
 

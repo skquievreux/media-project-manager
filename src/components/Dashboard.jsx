@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import ProjectCard from './ProjectCard';
-import { GridIcon, PlusIcon, VideoIcon, ImageIcon, AudioIcon, DocumentIcon, DownloadIcon } from './Icons';
+import { GridIcon, PlusIcon, VideoIcon, ImageIcon, AudioIcon, DocumentIcon, DownloadIcon, CheckIcon } from './Icons';
 import './Dashboard.css';
 
 const Dashboard = ({ projects, onSelectProject, onNewProject, onEditProject, onDeleteProject, onToggleStar }) => {
@@ -37,7 +37,8 @@ const Dashboard = ({ projects, onSelectProject, onNewProject, onEditProject, onD
             createdAt: new Date().toISOString().split('T')[0],
             isFavorite: false,
             assets: [],
-            notes: `Pfad: ${scannedProject.path}`
+            notes: `Pfad: ${scannedProject.path}`,
+            path: scannedProject.path // Store path for duplicate detection
         };
 
         onNewProject(newProject);
@@ -97,6 +98,16 @@ const Dashboard = ({ projects, onSelectProject, onNewProject, onEditProject, onD
     const recentProjects = [...projects]
         .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
         .slice(0, 6);
+
+    const isProjectImported = (scannedProj) => {
+        return projects.some(p => {
+            // Check by explicit path if available
+            if (p.path === scannedProj.path) return true;
+            // Fallback: Check if path is in notes (backward compatibility)
+            if (p.notes && p.notes.includes(scannedProj.path)) return true;
+            return false;
+        });
+    };
 
     return (
         <div className="dashboard">
@@ -211,32 +222,36 @@ const Dashboard = ({ projects, onSelectProject, onNewProject, onEditProject, onD
                                 <div className="loading-state">Scanne nach Projekten...</div>
                             ) : downloads.length > 0 ? (
                                 <div className="file-list-compact">
-                                    {downloads.map((proj, i) => (
-                                        <div key={i} className="file-item-compact">
-                                            <div className="file-icon" style={{
-                                                color: proj.type === 'album' || proj.type === 'song' ? 'var(--color-success)' :
-                                                    proj.type === 'commercial' ? 'var(--color-secondary)' :
-                                                        proj.type === 'bilder' ? 'var(--color-accent)' : 'var(--color-primary)'
-                                            }}>
-                                                {proj.type === 'album' || proj.type === 'song' ? <AudioIcon size={16} /> :
-                                                    proj.type === 'commercial' ? <VideoIcon size={16} /> :
-                                                        proj.type === 'bilder' ? <ImageIcon size={16} /> : <GridIcon size={16} />}
-                                            </div>
-                                            <div className="file-info">
-                                                <div className="file-name" title={proj.name}>{proj.name}</div>
-                                                <div className="file-meta">
-                                                    <span className="badge-sm">{proj.type.toUpperCase()}</span> • {proj.details}
+                                    {downloads.map((proj, i) => {
+                                        const isImported = isProjectImported(proj);
+                                        return (
+                                            <div key={i} className={`file-item-compact ${isImported ? 'opacity-50' : ''}`}>
+                                                <div className="file-icon" style={{
+                                                    color: proj.type === 'album' || proj.type === 'song' ? 'var(--color-success)' :
+                                                        proj.type === 'commercial' ? 'var(--color-secondary)' :
+                                                            proj.type === 'bilder' ? 'var(--color-accent)' : 'var(--color-primary)'
+                                                }}>
+                                                    {proj.type === 'album' || proj.type === 'song' ? <AudioIcon size={16} /> :
+                                                        proj.type === 'commercial' ? <VideoIcon size={16} /> :
+                                                            proj.type === 'bilder' ? <ImageIcon size={16} /> : <GridIcon size={16} />}
                                                 </div>
+                                                <div className="file-info">
+                                                    <div className="file-name" title={proj.name}>{proj.name}</div>
+                                                    <div className="file-meta">
+                                                        <span className="badge-sm">{proj.type.toUpperCase()}</span> • {proj.details}
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    className={`btn-ghost icon-btn-sm ${isImported ? 'cursor-not-allowed' : ''}`}
+                                                    title={isImported ? "Bereits importiert" : "Importieren"}
+                                                    onClick={() => !isImported && handleImportProject(proj)}
+                                                    disabled={isImported}
+                                                >
+                                                    {isImported ? <CheckIcon size={14} /> : <PlusIcon size={14} />}
+                                                </button>
                                             </div>
-                                            <button
-                                                className="btn-ghost icon-btn-sm"
-                                                title="Importieren"
-                                                onClick={() => handleImportProject(proj)}
-                                            >
-                                                <PlusIcon size={14} />
-                                            </button>
-                                        </div>
-                                    ))}
+                                        );
+                                    })}
                                 </div>
                             ) : (
                                 <div className="empty-state-small">
