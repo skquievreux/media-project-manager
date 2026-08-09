@@ -8,8 +8,33 @@
     "dev": "vite",
     "electron": "cross-env NODE_ENV=development concurrently \"vite\" \"wait-on tcp:5173 && electron .\"",
     "build": "vite build",
+    "dist": "pnpm run build && electron-builder",
     "lint": "eslint .",
     "preview": "vite preview"
+  },
+  "build": {
+    "appId": "com.squievreux.mpm",
+    "productName": "Media Project Manager",
+    "copyright": "Copyright © 2026 Quievreux",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        "msi"
+      ]
+    },
+    "msi": {
+      "oneClick": false,
+      "perMachine": true,
+      "shortcutName": "Media Project Manager",
+      "runAfterFinish": true
+    }
   },
   "dependencies": {
     "@squievreux/ui": "^0.1.1",

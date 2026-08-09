@@ -103,6 +103,9 @@ Für eine echte Windows-Anwendung ohne Node.js:
 # Installer + Portable .exe
 npm run dist:win
 
+# Professional MSI Installer (Recommended)
+pnpm run dist
+
 # Nur Portable .exe
 npm run dist:portable
 ```
